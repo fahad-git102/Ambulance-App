@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?><!-- Generator: Adobe Illustrator 24.3.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg xmlns="http://www.w3.org/2000/svg"
+    width="380"
+    height="800"
+    viewBox="0 0 380 800"
+    preserveAspectRatio="xMidYMid meet">
+<style type="text/css">
+	.st0{
+		fill: #CCCCCC;
+		fill-opacity: 1;
+		stroke:white;
+		stroke-opacity: 1;
+		stroke-width:0.5;
+		}
+    .st1{fill:#FFFFFF;stroke:#fff;stroke-width:4;stroke-miterlimit:10;}
+    .st2{fill:none;stroke:#fff;stroke-width:4;stroke-miterlimit:10;}
+</style>
+    <rect id="bg" x="0" y="0" width="380" height="800" fill="none" stroke="#CCCCCC"/>
+    <g>
+        <path id="110" name="Head" class="st0" d="M150,15 a50,65 0 1,0 0.01,0 Z" />
+        ;;
+        <path id="111" name="Neck" class="st0" d="M125,140 h50 a10,10 0 0 1 10,10 v5 a10,10 0 0 1 -10,10 h-50 a10,10 0 0 1 -10,-10 v-5 a10,10 0 0 1 10,-10 Z" />
+        ;;
+        <path id="112" name="Torso" class="st0" d="M90,165 Q150,150 210,165 L210,380 Q150,400 90,380 Z" />
+        ;;
+        <path id="113" name="Left Upper Arm" class="st0" d="M40,180 h30 a20,20 0 0 1 20,20 v80 a20,20 0 0 1 -20,20 h-30 a20,20 0 0 1 -20,-20 v-80 a20,20 0 0 1 20,-20 Z" />
+        ;;
+        <path id="114" name="Left Forearm" class="st0" d="M40,300 h27 a20,20 0 0 1 20,20 v80 a20,20 0 0 1 -20,20 h-30 a20,20 0 0 1 -20,-20 v-80 a20,20 0 0 1 20,-20 Z" />;
+        <path id="115" name="Left Hand" class="st0" d="M50,410 a25,20 0 1,0 0.01,0 Z" />;
+        <path id="116" name="Right Upper Arm" class="st0" d="M220,180 h40 a20,20 0 0 1 20,20 v80 a20,20 0 0 1 -20,20 h-30 a20,20 0 0 1 -20,-20 v-80 a20,20 0 0 1 20,-20 Z" />;
+        <path id="117" name="Right Forearm" class="st0" d="M230,300 h33 a20,20 0 0 1 20,20 v80 a20,20 0 0 1 -20,20 h-30 a20,20 0 0 1 -20,-20 v-80 a20,20 0 0 1 20,-20 Z" />;
+        <path id="118" name="Right Hand" class="st0" d="M250,410 a25,20 0 1,0 0.01,0 Z" />;
+        <path id="109" name="Left Thigh" class="st0" d="M90,380 h38 a20,20 0 0 1 20,20 v110 a20,20 0 0 1 -20,20 h-30 a20,20 0 0 1 -20,-20 v-110 a20,20 0 0 1 20,-20 Z" />;
+        <path id="108" name="Left Shin" class="st0" d="M90,530 h38 a20,20 0 0 1 20,20 v110 a20,20 0 0 1 -20,20 h-30 a20,20 0 0 1 -20,-20 v-110 a20,20 0 0 1 20,-20 Z" />;
+        <path id="107" name="Left Foot" class="st0" d="M110,670 a40,20 0 1,0 0.01,0 Z" />;
+        <path id="106" name="Right Thigh" class="st0" d="M160,380 h40 a20,20 0 0 1 20,20 v110 a20,20 0 0 1 -20,20 h-30 a20,20 0 0 1 -20,-20 v-110 a20,20 0 0 1 20,-20 Z" />;
+        <path id="105" name="Right Shin" class="st0" d="M160,530 h40 a20,20 0 0 1 20,20 v110 a20,20 0 0 1 -20,20 h-30 a20,20 0 0 1 -20,-20 v-110 a20,20 0 0 1 20,-20 Z" />;
+        <path id="104" name="Right Foot" class="st0" d="M190,670 a40,20 0 1,0 0.01,0 Z" />;
+</g>
+</svg>

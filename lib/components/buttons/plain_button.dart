@@ -14,6 +14,7 @@ class PlainButton extends StatelessWidget {
   final bool? noShadow;
   final bool? outLined;
   final bool? active;
+  final double? horizontalPadding;
 
   const PlainButton({
     super.key,
@@ -23,7 +24,7 @@ class PlainButton extends StatelessWidget {
     this.outLined = false,
     this.backgroundColor,
     this.text,
-    this.textColor, this.width, this.fontSize, this.noShadow,
+    this.textColor, this.width, this.fontSize, this.noShadow, this.horizontalPadding,
   });
 
   @override
@@ -33,7 +34,7 @@ class PlainButton extends StatelessWidget {
       child: Container(
         height: height ?? 48,
         width: width,
-        padding: EdgeInsets.symmetric(horizontal: 15),
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding??15),
         decoration: BoxDecoration(
           color: active == false
               ? AppColors.lightGray
