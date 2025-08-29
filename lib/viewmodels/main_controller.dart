@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:ambulance_app/models/body_injury.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -44,6 +45,13 @@ class MainController extends GetxController {
     'Burn',
     'Other',
   ];
+  final List<String> dispositionsList = [
+    'Returned to class',
+    'Sent home',
+    'Released to guardian',
+    'EMS activated',
+    'Refused care',
+  ];
   final List<String> commonIllnessType = [
     'Asthma',
     'Anaphylaxis/Allergic Rxn',
@@ -57,6 +65,7 @@ class MainController extends GetxController {
     'Other',
   ];
   var selectedSubjectGender = ''.obs;
+  var selectedDisposition = ''.obs;
   var selectedSubjectType = "".obs;
   var selectedInjurySeverity = ''.obs;
   var selectedCommonInjuryType = ''.obs;
@@ -83,6 +92,7 @@ class MainController extends GetxController {
     selectedInjurySeverity.value = injurySeverity[0];
     selectedCommonInjuryType.value = commonInjuryType[0];
     selectedCommonIllnessType.value = commonIllnessType[0];
+    selectedDisposition.value = dispositionsList[0];
     BaseHelper.requestPermissions();
     addVitalSet();
     super.onInit();
@@ -120,6 +130,9 @@ class MainController extends GetxController {
   void setCommonIllnessType(String value) {
     selectedCommonIllnessType.value = value;
   }
+  void setDisposition(String value) {
+    selectedDisposition.value = value;
+  }
 
   void addVitalSet() {
     vitalSets.add(VitalSet());
@@ -140,6 +153,21 @@ class MainController extends GetxController {
       if(bodyInjuryList[i].id == id){
         bodyInjuryList.removeAt(i);
       }
+    }
+  }
+
+  void editBodyInjury(String? id, String? injuryType, String? severity, String? notes) {
+    final index = bodyInjuryList.indexWhere((e) => e.id == id);
+    if (index != -1) {
+      bodyInjuryList[index] = BodyInjury(
+        id: bodyInjuryList[index].id,
+        injuryType: injuryType,
+        severity: severity,
+        notes: notes,
+        bodySide: bodyInjuryList[index].bodySide,
+        region: bodyInjuryList[index].region,
+        added: bodyInjuryList[index].added,
+      );
     }
   }
 
@@ -212,4 +240,31 @@ class MainController extends GetxController {
       print("Error picking date: $e");
     }
   }
+
+  pickDateTime(DateTime initialDate, TextEditingController? controller) async {
+    try {
+      final pickedDate = await BaseHelper.datePicker(
+        Get.context,
+        initialDate: initialDate,
+      );
+      if (pickedDate == null) return;
+      final pickedTime = await showTimePicker(
+        context: Get.context!,
+        initialTime: TimeOfDay.fromDateTime(initialDate),
+      );
+      if (pickedTime == null) return;
+      final finalDateTime = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        pickedTime.hour,
+        pickedTime.minute,
+      );
+      controller?.text = DateFormat('MMM dd, yyyy • hh:mm a').format(finalDateTime);
+      print("DateTime picked: ${controller?.text}");
+    } catch (e) {
+      print("Error picking date/time: $e");
+    }
+  }
+
 }

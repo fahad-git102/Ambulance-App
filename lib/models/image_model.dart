@@ -10,4 +10,13 @@ class ImageModel {
     required this.pickedAt,
     this.caption,
   });
+
+  Future<Map<String, dynamic>> toMap() async {
+    final bytes = await file.readAsBytes();
+    return {
+      "pickedAt": pickedAt.toIso8601String(),
+      "file": bytes,
+      "caption": caption,
+    };
+  }
 }

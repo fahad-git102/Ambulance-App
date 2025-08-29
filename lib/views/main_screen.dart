@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:ambulance_app/components/buttons/plain_button.dart';
 import 'package:ambulance_app/components/common_widgets/body_injury_widget.dart';
 import 'package:ambulance_app/components/common_widgets/photo_widget.dart';
@@ -8,13 +11,20 @@ import 'package:ambulance_app/components/text_widgets/custom_text.dart';
 import 'package:ambulance_app/components/text_widgets/small_light_text.dart';
 import 'package:ambulance_app/core/app_colors.dart';
 import 'package:ambulance_app/core/app_contants.dart';
+import 'package:ambulance_app/core/base_helper.dart';
+import 'package:ambulance_app/core/pdf_generator.dart';
 import 'package:ambulance_app/viewmodels/main_controller.dart';
+import 'package:ambulance_app/views/resports_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:interactable_svg/interactable_svg/interactable_svg.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:printing/printing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:syncfusion_flutter_signaturepad/signaturepad.dart';
 
 import '../components/bottomsheets/image_picker_bottomsheet.dart';
+import '../components/dialogs/edit_body_map_dialog.dart';
 
 class MainScreen extends StatelessWidget {
   MainScreen({super.key});
@@ -23,14 +33,6 @@ class MainScreen extends StatelessWidget {
   final GlobalKey<SfSignaturePadState> _responderKey = GlobalKey();
   final GlobalKey<SfSignaturePadState> _patientKey = GlobalKey();
   final GlobalKey<SfSignaturePadState> _guardianKey = GlobalKey();
-
-  final List<String> dispositionsList = [
-    'Returned to class',
-    'Sent home',
-    'Released to guardian',
-    'EMS activated',
-    'Refused care',
-  ];
 
   final List<String> immediateTreatments = [
     'Ice',
@@ -64,6 +66,30 @@ class MainScreen extends StatelessWidget {
           ],
         ),
         centerTitle: true,
+        actions: [
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert, color: AppColors.textBlack),
+            onSelected: (value) {
+              if (value == 'report') {
+                // navigate to report form
+              } else if (value == 'past') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (context) => ReportsListScreen(),
+                  ),
+                );
+              } else if (value == 'settings') {
+                // navigate to settings
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(value: 'report', child: Text('Report Form')),
+              PopupMenuItem(value: 'past', child: Text('Past Reports')),
+              PopupMenuItem(value: 'settings', child: Text('Settings')),
+            ],
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -161,7 +187,7 @@ class MainScreen extends StatelessWidget {
                         controller: controller.occurredDateController,
                         suffixIcon: Icon(Icons.calendar_today, size: 18),
                         onTap: () {
-                          controller.pickDate(
+                          controller.pickDateTime(
                             initialDate,
                             controller.occurredDateController,
                           );
@@ -308,9 +334,9 @@ class MainScreen extends StatelessWidget {
                                             size: 18,
                                           ),
                                           onTap: () {
-                                            controller.pickDate(
+                                            controller.pickDateTime(
                                               initialDate,
-                                              controller.vitalsTimeController,
+                                              vital.time,
                                             );
                                           },
                                         ),
@@ -635,6 +661,7 @@ class MainScreen extends StatelessWidget {
                                 bodySide: controller.isFront.value == true
                                     ? 'Front'
                                     : 'Back',
+                                region: region.name,
                               ),
                             );
                           },
@@ -661,19 +688,64 @@ class MainScreen extends StatelessWidget {
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
                                 itemBuilder: (context, index) {
-                                  return BodyInjuryWidget(
-                                    added: controller.bodyInjuryList[index].added,
-                                    severity: controller.bodyInjuryList[index].severity,
-                                    notes: controller.bodyInjuryList[index].notes,
-                                    title:
-                                        '${controller.bodyInjuryList[index].bodySide} -- ${controller.bodyInjuryList[index].injuryType}',
-                                    onRemoveTap: (){
-                                      controller.removeBodyInjuries(controller.bodyInjuryList[index].id);
-                                    },
-                                    onDuplicateTap: (){
-                                      controller.addBodyInjuries(controller.bodyInjuryList[index]);
-                                    },
-                                  );
+                                  return Obx(() {
+                                    return BodyInjuryWidget(
+                                      injuryType: controller
+                                          .bodyInjuryList[index]
+                                          .injuryType,
+                                      added: controller
+                                          .bodyInjuryList[index]
+                                          .added,
+                                      severity: controller
+                                          .bodyInjuryList[index]
+                                          .severity,
+                                      notes: controller
+                                          .bodyInjuryList[index]
+                                          .notes,
+                                      region: controller
+                                          .bodyInjuryList[index]
+                                          .region,
+                                      title:
+                                          '${controller.bodyInjuryList[index].bodySide} -- ${controller.bodyInjuryList[index].region}',
+                                      onRemoveTap: () {
+                                        controller.removeBodyInjuries(
+                                          controller.bodyInjuryList[index].id,
+                                        );
+                                      },
+                                      onDuplicateTap: () {
+                                        controller.addBodyInjuries(
+                                          controller.bodyInjuryList[index],
+                                        );
+                                      },
+                                      onEditTap: () {
+                                        Get.dialog(
+                                          EditBodyMapDialog(
+                                            injuryId: controller
+                                                .bodyInjuryList[index]
+                                                .id,
+                                            title:
+                                                "Edit Injury — ${controller.bodyInjuryList[index].bodySide} · ${controller.bodyInjuryList[index].region}",
+                                            bodySide:
+                                                controller.isFront.value == true
+                                                ? 'Front'
+                                                : 'Back',
+                                            region: controller
+                                                .bodyInjuryList[index]
+                                                .region,
+                                            injuryType: controller
+                                                .bodyInjuryList[index]
+                                                .injuryType,
+                                            severity: controller
+                                                .bodyInjuryList[index]
+                                                .severity,
+                                            notes: controller
+                                                .bodyInjuryList[index]
+                                                .notes,
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  });
                                 },
                                 separatorBuilder: (context, index) {
                                   return SizedBox(height: 10);
@@ -721,12 +793,18 @@ class MainScreen extends StatelessWidget {
                         fontSize: 19,
                       ),
                       SizedBox(height: 10),
-                      CustomDropdown(
-                        label: 'Disposition',
-                        onChanged: (val) {},
-                        currentValue: dispositionsList[0],
-                        items: dispositionsList,
-                      ),
+                      Obx(() {
+                        return CustomDropdown(
+                          label: 'Disposition',
+                          onChanged: (val) {
+                            if (val != null) {
+                              controller.setDisposition(val);
+                            }
+                          },
+                          currentValue: controller.selectedDisposition.value,
+                          items: controller.dispositionsList,
+                        );
+                      }),
                       SizedBox(height: 14),
                       Obx(() {
                         return Row(
@@ -768,13 +846,83 @@ class MainScreen extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 20),
-                PlainButton(
-                  text: 'Export PDF',
-                  onTap: () {
-                    print(controller.pickedPhotos.length);
-                    print(controller.selectedImmediateTreatments.length);
-                  },
-                ),
+                PlainButton(text: 'Export PDF', onTap: () async {
+
+                  final responderSig = await BaseHelper().getSignatureBytes(_responderKey);
+                  final patientSig   = await BaseHelper().getSignatureBytes(_patientKey);
+                  final guardianSig  = await BaseHelper().getSignatureBytes(_guardianKey);
+                  final vitalsList = controller.vitalSets.map((v) => v.toMap()).toList();
+                  final bodyMapDescriptions = controller.bodyInjuryList.map((injury) {
+                    return {
+                      "bodySide": injury.bodySide ?? '',
+                      "region": injury.region ?? '',
+                      "injuryType": injury.injuryType ?? '',
+                      "severity": injury.severity ?? '',
+                      "notes": injury.notes ?? '',
+                    };
+                  }).toList();
+
+                  final photosList = await Future.wait(
+                    controller.pickedPhotos.map((img) async => {
+                      "pickedAt": img.pickedAt.toIso8601String(),
+                      "file": await img.file.readAsBytes(),
+                      "caption": img.caption ?? "",
+                    }),
+                  );
+
+                  List<String> treatmentsStrList = [];
+                  for(int i = 0; i<controller.selectedImmediateTreatments.length; i++){
+                    treatmentsStrList.add(immediateTreatments[controller.selectedImmediateTreatments[i]]);
+                  }
+
+                  final Map<String, dynamic> mapData = {
+                    "incidentDate": controller.occurredDateController?.text,
+                    "name": "${controller.firstNameController?.text} ${controller.lastNameController?.text}",
+                    "studentId": "${controller.studentIDController?.text}",
+                    "gender": "${controller.selectedSubjectGender}",
+                    "dob": "${controller.dobController?.text}",
+
+                    "site": "${controller.siteController?.text}",
+                    "location": "${controller.locationController?.text}",
+                    "activity": "${controller.activityController?.text}",
+                    "severity": "${controller.selectedInjurySeverity}",
+                    "mechanism": "${controller.mechanismController?.text}",
+                    "injuryType": "${controller.selectedCommonInjuryType}",
+                    "illnessType": "${controller.selectedCommonIllnessType}",
+
+                    "chiefComplaint": "${controller.chiefComplaintController?.text}",
+                    "notes": "${controller.notesController?.text}",
+
+                    "treatments": treatmentsStrList.join(', '),
+                    "vitals": vitalsList,
+
+                    "bodyMap": bodyMapDescriptions,
+
+                    "photos": photosList,
+
+                    "signResponder": responderSig,
+                    "signPatient": patientSig,
+                    "signGuardian": guardianSig,
+                  };
+                  final pdfBytes = await generateIncidentReportPdf(mapData);
+                  final dir = await getApplicationDocumentsDirectory();
+                  final fileName = "incident_report_${DateTime.now().millisecondsSinceEpoch}.pdf";
+                  final file = File("${dir.path}/$fileName");
+                  await file.writeAsBytes(pdfBytes);
+                  final reportMeta = {
+                    "filePath": file.path,
+                    "createdAt": DateTime.now().toIso8601String(),
+                    "name": mapData["name"],
+                    "incidentDate": mapData["incidentDate"],
+                    "notes": mapData["notes"],
+                  };
+
+                  await saveReportMetadata(reportMeta);
+                  await Printing.layoutPdf(
+                    name: fileName,
+                    onLayout: (format) async => pdfBytes,
+                  );
+                }),
                 SizedBox(height: 10),
               ],
             ),
@@ -784,7 +932,15 @@ class MainScreen extends StatelessWidget {
     );
   }
 
-  _buildSignatureWidget(Key? key, String label) {
+  Future<void> saveReportMetadata(Map<String, dynamic> reportMeta) async {
+    final prefs = await SharedPreferences.getInstance();
+    final reportsJson = prefs.getStringList("reports") ?? [];
+    reportsJson.add(jsonEncode(reportMeta));
+
+    await prefs.setStringList("reports", reportsJson);
+  }
+
+  _buildSignatureWidget(GlobalKey<SfSignaturePadState>? key, String label) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -798,9 +954,26 @@ class MainScreen extends StatelessWidget {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: SfSignaturePad(
-              key: key,
-              backgroundColor: AppColors.lightestGray,
+            child: Stack(
+              children: [
+                SfSignaturePad(
+                  key: key,
+                  backgroundColor: AppColors.lightestGray,
+                ),
+                Positioned(
+                    bottom: 10,
+                    right: 10,
+                    child: PlainButton(
+                        outLined: true,
+                        fontSize: 12,
+                        backgroundColor: AppColors.lightGray,
+                        horizontalPadding: 7,
+                        height: 28,
+                        text: 'Clear',
+                        onTap: (){
+                          key?.currentState!.clear();
+                        }))
+              ],
             ),
           ),
         ),

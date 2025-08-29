@@ -4,22 +4,21 @@ import 'package:ambulance_app/components/text_widgets/custom_text.dart';
 import 'package:ambulance_app/core/app_colors.dart';
 import 'package:ambulance_app/models/body_injury.dart';
 import 'package:ambulance_app/viewmodels/main_controller.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../dropdowns/custom_dropdown.dart';
 
-class BodyMapDialog extends StatefulWidget {
-  final String? title, bodySide, injuryId, region;
+class EditBodyMapDialog extends StatefulWidget {
+  final String? title, bodySide, injuryId, region, injuryType, severity, notes;
 
-  const BodyMapDialog({super.key, this.title, this.bodySide, this.injuryId, this.region});
+  const EditBodyMapDialog({super.key, this.title, this.bodySide, this.injuryId, this.region, this.injuryType, this.severity, this.notes});
 
   @override
   State<StatefulWidget> createState() => _BodyMapState();
 }
 
-class _BodyMapState extends State<BodyMapDialog> {
+class _BodyMapState extends State<EditBodyMapDialog> {
   TextEditingController? injuryTypeController, notesController;
   String? selectedInjurySeverity;
   final List<String> injurySeverity = ['Minor', 'Moderate', 'Major'];
@@ -27,9 +26,9 @@ class _BodyMapState extends State<BodyMapDialog> {
 
   @override
   void initState() {
-    injuryTypeController = TextEditingController();
-    notesController = TextEditingController();
-    selectedInjurySeverity = 'Minor';
+    injuryTypeController = TextEditingController(text: widget.injuryType);
+    notesController = TextEditingController(text: widget.notes);
+    selectedInjurySeverity = widget.severity;
     controller = Get.find<MainController>();
     super.initState();
   }
@@ -105,14 +104,7 @@ class _BodyMapState extends State<BodyMapDialog> {
                     height: 40,
                     text: 'Save',
                     onTap: () {
-                      final bodyInjury = BodyInjury()
-                        ..injuryType = injuryTypeController?.text
-                        ..notes = notesController?.text
-                        ..bodySide = widget.bodySide
-                        ..added = DateTime.now().toUtc().toIso8601String()
-                        ..region = widget.region
-                        ..severity = selectedInjurySeverity;
-                      controller.addBodyInjuries(bodyInjury);
+                      controller.editBodyInjury(widget.injuryId, injuryTypeController?.text, selectedInjurySeverity, notesController?.text);
                       Get.back();
                     },
                   ),
