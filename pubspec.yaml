@@ -52,6 +52,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  flutter_launcher_icons: ^0.14.4
+
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
@@ -76,6 +78,15 @@ flutter:
      - assets/body_front.svg
      - assets/floor_map.svg
      - assets/ambulance_logo.png
+     - assets/bodies/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path_android: "assets/ambulance_logo.png"
+  image_path_ios: "assets/ambulance_logo.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/ambulance_logo.png"
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

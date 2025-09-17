@@ -2,13 +2,14 @@ import 'package:uuid/uuid.dart';
 
 class BodyInjury {
   String id;
-  String? injuryType, severity, notes, bodySide, added, region;
+  String? injuryType, severity, notes, bodySide, added, region, gender;
 
   BodyInjury({
     String? id,
     this.injuryType,
     this.severity,
     this.notes,
+    this.gender,
     this.added,
     this.region,
     this.bodySide,
@@ -20,6 +21,7 @@ class BodyInjury {
       'injuryType': injuryType,
       'severity': severity,
       'notes': notes,
+      'gender': gender,
       'region': region,
       'added': added,
       'bodySide': bodySide
@@ -33,6 +35,7 @@ class BodyInjury {
       severity: map['severity'] as String?,
       added: map['added'] as String?,
       region: map['region'] as String?,
+      gender: map['gender'] as String?,
       bodySide: map['bodySide'] as String?,
       notes: map['notes'] as String?,
     );

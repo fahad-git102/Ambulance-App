@@ -1,4 +1,5 @@
 import 'package:ambulance_app/views/main_screen.dart';
+import 'package:ambulance_app/views/password_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get_navigation/src/root/get_material_app.dart';
@@ -17,7 +18,7 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       initialBinding: InitialBindings(),
       debugShowCheckedModeBanner: false,
-      home: MainScreen(),
+      home: PasswordScreen(),
       builder: EasyLoading.init(),
       theme: ThemeData(
         primarySwatch: createMaterialColor(AppColors.mainColor),

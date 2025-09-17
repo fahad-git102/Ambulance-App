@@ -9,6 +9,7 @@ class VitalSet {
   TextEditingController spo2 = TextEditingController();
   TextEditingController temp = TextEditingController();
   TextEditingController bgl = TextEditingController();
+  TextEditingController gcs = TextEditingController();
 
   Map<String, dynamic> toMap() {
     return {
@@ -20,6 +21,7 @@ class VitalSet {
       "spo2": spo2.text,
       "temp_c": temp.text,
       "bgl_mgdl": bgl.text,
+      "gcs": gcs.text
     };
   }
 }

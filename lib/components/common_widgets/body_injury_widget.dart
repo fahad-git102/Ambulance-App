@@ -7,7 +7,7 @@ import '../buttons/plain_button.dart';
 import '../text_widgets/custom_text.dart';
 
 class BodyInjuryWidget extends StatelessWidget {
-  final String? title, notes, added, severity, region, injuryType;
+  final String? title, notes, added, severity, region, injuryType, gender;
   final VoidCallback? onRemoveTap, onEditTap, onDuplicateTap;
 
   @override
@@ -66,7 +66,7 @@ class BodyInjuryWidget extends StatelessWidget {
           ),
           SizedBox(height: 5,),
           SmallLightText(
-            title: '$injuryType ($severity) -- $notes',
+            title: '$gender - $injuryType ($severity) -- $notes',
           ),
           SizedBox(height: 5,),
           SmallLightText(
@@ -78,5 +78,5 @@ class BodyInjuryWidget extends StatelessWidget {
     );
   }
 
-  BodyInjuryWidget({super.key, this.title, this.notes, this.added, this.severity, this.onRemoveTap, this.onEditTap, this.onDuplicateTap, this.region, this.injuryType});
+  BodyInjuryWidget({super.key, this.title, this.notes, this.added, this.severity, this.onRemoveTap, this.onEditTap, this.onDuplicateTap, this.region, this.injuryType, this.gender});
 }

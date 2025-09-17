@@ -11,9 +11,9 @@ import 'package:get/get.dart';
 import '../dropdowns/custom_dropdown.dart';
 
 class BodyMapDialog extends StatefulWidget {
-  final String? title, bodySide, injuryId, region;
+  final String? title, bodySide, injuryId, region, gender;
 
-  const BodyMapDialog({super.key, this.title, this.bodySide, this.injuryId, this.region});
+  const BodyMapDialog({super.key, this.title, this.bodySide, this.injuryId, this.region, this.gender});
 
   @override
   State<StatefulWidget> createState() => _BodyMapState();
@@ -84,6 +84,7 @@ class _BodyMapState extends State<BodyMapDialog> {
               CustomTextField(
                 controller: notesController,
                 label: 'Notes',
+                textInputAction: TextInputAction.newline,
                 maxLines: 3,
               ),
               SizedBox(height: 14),
@@ -109,6 +110,7 @@ class _BodyMapState extends State<BodyMapDialog> {
                         ..injuryType = injuryTypeController?.text
                         ..notes = notesController?.text
                         ..bodySide = widget.bodySide
+                        ..gender = widget.gender
                         ..added = DateTime.now().toUtc().toIso8601String()
                         ..region = widget.region
                         ..severity = selectedInjurySeverity;

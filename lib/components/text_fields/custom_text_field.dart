@@ -14,6 +14,7 @@ class CustomTextField extends StatelessWidget {
   final Function(String)? onChanged;
   final double? cornerRadius;
   final String? hintText;
+  final TextInputAction? textInputAction;
   final int? maxLines, minLines;
   final String? errorText;
   final VoidCallback? onTap;
@@ -36,11 +37,17 @@ class CustomTextField extends StatelessWidget {
     this.enabled = true,
     this.errorText,
     this.onTap,
-    this.readOnly = false,
+    this.readOnly = false, this.textInputAction,
   });
 
   @override
   Widget build(BuildContext context) {
+
+    TextInputType effectiveKeyboardType = inputType ?? TextInputType.text;
+    if (textInputAction == TextInputAction.newline && (maxLines == null || maxLines! > 1)) {
+      effectiveKeyboardType = TextInputType.multiline;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -65,6 +72,8 @@ class CustomTextField extends StatelessWidget {
           readOnly: readOnly == true || suffixIcon != null,
           enabled: enabled,
           onChanged: onChanged,
+          textInputAction: textInputAction,
+          keyboardType: effectiveKeyboardType,
           decoration: InputDecoration(
             filled: true,
             hintText: hintText,
@@ -100,7 +109,7 @@ class CustomTextField extends StatelessWidget {
             suffixIcon: suffixIcon,
             prefixIcon: prefixIcon,
           ),
-          keyboardType: inputType ?? TextInputType.text,
+          // keyboardType: inputType ?? TextInputType.text,
           style: TextStyle(
             color: AppColors.textBlack,
             fontSize: 14,

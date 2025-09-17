@@ -1,8 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:ambulance_app/components/buttons/plain_button.dart';
+import 'package:ambulance_app/components/common_widgets/back_body_female.dart';
 import 'package:ambulance_app/components/common_widgets/body_injury_widget.dart';
+import 'package:ambulance_app/components/common_widgets/front_body_female.dart';
+import 'package:ambulance_app/components/common_widgets/front_body_male.dart';
 import 'package:ambulance_app/components/common_widgets/photo_widget.dart';
 import 'package:ambulance_app/components/dialogs/body_map_dialog.dart';
 import 'package:ambulance_app/components/dropdowns/custom_dropdown.dart';
@@ -12,10 +16,12 @@ import 'package:ambulance_app/components/text_widgets/small_light_text.dart';
 import 'package:ambulance_app/core/app_colors.dart';
 import 'package:ambulance_app/core/app_contants.dart';
 import 'package:ambulance_app/core/base_helper.dart';
-import 'package:ambulance_app/core/pdf_generator.dart';
+import 'package:ambulance_app/core/new_pdf_generator.dart';
 import 'package:ambulance_app/viewmodels/main_controller.dart';
 import 'package:ambulance_app/views/resports_list_screen.dart';
+import 'package:ambulance_app/views/settings_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get.dart';
 import 'package:interactable_svg/interactable_svg/interactable_svg.dart';
 import 'package:path_provider/path_provider.dart';
@@ -24,7 +30,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:syncfusion_flutter_signaturepad/signaturepad.dart';
 
 import '../components/bottomsheets/image_picker_bottomsheet.dart';
+import '../components/common_widgets/back_body_male.dart';
 import '../components/dialogs/edit_body_map_dialog.dart';
+import '../core/body_pdf_helper.dart';
 
 class MainScreen extends StatelessWidget {
   MainScreen({super.key});
@@ -33,17 +41,14 @@ class MainScreen extends StatelessWidget {
   final GlobalKey<SfSignaturePadState> _responderKey = GlobalKey();
   final GlobalKey<SfSignaturePadState> _patientKey = GlobalKey();
   final GlobalKey<SfSignaturePadState> _guardianKey = GlobalKey();
-
-  final List<String> immediateTreatments = [
-    'Ice',
-    'Wound Care',
-    'Bandage',
-    'Splint',
-    'Inhaler',
-    'Epi',
-    'Cpr',
-    'Other',
-  ];
+  Set<String> selectedFrontMaleBodyParts = <String>{};
+  Set<String> selectedBackMaleBodyParts = <String>{};
+  Set<String> selectedFrontFemaleBodyParts = <String>{};
+  Set<String> selectedBackFemaleBodyParts = <String>{};
+  final GlobalKey _frontMaleBodyKey = GlobalKey();
+  final GlobalKey _backMaleBodyKey = GlobalKey();
+  final GlobalKey _frontFemaleBodyKey = GlobalKey();
+  final GlobalKey _backFemaleBodyKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +85,12 @@ class MainScreen extends StatelessWidget {
                   ),
                 );
               } else if (value == 'settings') {
-                // navigate to settings
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (context) => SettingsScreen(),
+                  ),
+                );
               }
             },
             itemBuilder: (context) => [
@@ -112,6 +122,15 @@ class MainScreen extends StatelessWidget {
                       CustomBoldText(title: 'Subject', fontSize: 19),
                       const SizedBox(height: 10),
                       Obx(() {
+                        if (!controller.subjectType.toList().contains(
+                              controller.selectedSubjectType.value,
+                            ) &&
+                            controller.subjectType.toList().isNotEmpty) {
+                          controller.selectedSubjectType.value = controller
+                              .subjectType
+                              .toList()
+                              .first;
+                        }
                         return CustomDropdown(
                           label: 'Type',
                           onChanged: (val) {
@@ -120,7 +139,7 @@ class MainScreen extends StatelessWidget {
                             }
                           },
                           currentValue: controller.selectedSubjectType.value,
-                          items: controller.subjectType,
+                          items: controller.subjectType.toList(),
                         );
                       }),
                       const SizedBox(height: 7),
@@ -210,6 +229,15 @@ class MainScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 7),
                       Obx(() {
+                        if (!controller.injurySeverity.toList().contains(
+                              controller.selectedInjurySeverity.value,
+                            ) &&
+                            controller.injurySeverity.toList().isNotEmpty) {
+                          controller.selectedInjurySeverity.value = controller
+                              .injurySeverity
+                              .toList()
+                              .first;
+                        }
                         return CustomDropdown(
                           label: 'Severity',
                           onChanged: (val) {
@@ -218,11 +246,38 @@ class MainScreen extends StatelessWidget {
                             }
                           },
                           currentValue: controller.selectedInjurySeverity.value,
-                          items: controller.injurySeverity,
+                          items: controller.injurySeverity.toList(),
                         );
+                      }),
+                      Obx(() {
+                        return controller.selectedInjurySeverity.value ==
+                                "Other"
+                            ? Padding(
+                                padding: const EdgeInsets.only(
+                                  top: 3.0,
+                                  bottom: 4,
+                                ),
+                                child: CustomTextField(
+                                  label: 'Specify Other Severity',
+                                  hintText: 'e.g. Critical, Fatal',
+                                  onChanged: (val) {
+                                    controller.otherSeverityText.value = val;
+                                  },
+                                ),
+                              )
+                            : Container();
                       }),
                       const SizedBox(height: 7),
                       Obx(() {
+                        if (!controller.commonInjuryType.toList().contains(
+                              controller.selectedCommonInjuryType.value,
+                            ) &&
+                            controller.commonInjuryType.toList().isNotEmpty) {
+                          controller.selectedCommonInjuryType.value = controller
+                              .commonInjuryType
+                              .toList()
+                              .first;
+                        }
                         return CustomDropdown(
                           label: 'Common Injury Type',
                           onChanged: (val) {
@@ -232,11 +287,36 @@ class MainScreen extends StatelessWidget {
                           },
                           currentValue:
                               controller.selectedCommonInjuryType.value,
-                          items: controller.commonInjuryType,
+                          items: controller.commonInjuryType.toList(),
                         );
+                      }),
+                      Obx(() {
+                        return controller.selectedCommonInjuryType.value ==
+                                "Other"
+                            ? Padding(
+                                padding: const EdgeInsets.only(
+                                  top: 3.0,
+                                  bottom: 4,
+                                ),
+                                child: CustomTextField(
+                                  label: 'Specify Other Injury',
+                                  hintText: 'e.g. Finger Jam, Ear laceration',
+                                  onChanged: (val) {
+                                    controller.otherInjuryText.value = val;
+                                  },
+                                ),
+                              )
+                            : Container();
                       }),
                       const SizedBox(height: 7),
                       Obx(() {
+                        if (!controller.commonIllnessType.toList().contains(
+                              controller.selectedCommonIllnessType.value,
+                            ) &&
+                            controller.commonIllnessType.toList().isNotEmpty) {
+                          controller.selectedCommonIllnessType.value =
+                              controller.commonIllnessType.toList().first;
+                        }
                         return CustomDropdown(
                           label: 'Common Illness Type',
                           onChanged: (val) {
@@ -246,8 +326,26 @@ class MainScreen extends StatelessWidget {
                           },
                           currentValue:
                               controller.selectedCommonIllnessType.value,
-                          items: controller.commonIllnessType,
+                          items: controller.commonIllnessType.toList(),
                         );
+                      }),
+                      Obx(() {
+                        return controller.selectedCommonIllnessType.value ==
+                                "Other"
+                            ? Padding(
+                                padding: const EdgeInsets.only(
+                                  top: 3.0,
+                                  bottom: 4,
+                                ),
+                                child: CustomTextField(
+                                  label: 'Specify Other Illness',
+                                  hintText: 'e.g. Migraine, Stomach bug',
+                                  onChanged: (val) {
+                                    controller.otherIllnessText.value = val;
+                                  },
+                                ),
+                              )
+                            : Container();
                       }),
                       const SizedBox(height: 7),
                       CustomTextField(
@@ -263,6 +361,7 @@ class MainScreen extends StatelessWidget {
                       CustomTextField(
                         label: 'Notes',
                         maxLines: 4,
+                        textInputAction: TextInputAction.newline,
                         controller: controller.notesController,
                       ),
                     ],
@@ -411,7 +510,11 @@ class MainScreen extends StatelessWidget {
                                       ),
                                     ],
                                   ),
-                                  SizedBox(height: 5),
+                                  SizedBox(height: 10),
+                                  CustomTextField(
+                                    label: 'GCS',
+                                    controller: vital.gcs,
+                                  ),
                                 ],
                               ),
                             );
@@ -437,25 +540,24 @@ class MainScreen extends StatelessWidget {
                         fontSize: 19,
                       ),
                       SizedBox(height: 18),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 9,
-                          mainAxisSpacing: 9,
-                          childAspectRatio: 2.5,
-                        ),
-                        itemCount: immediateTreatments.length,
-                        itemBuilder: (context, index) {
-                          final item = immediateTreatments[index];
+                      Obx(() {
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 9,
+                                mainAxisSpacing: 9,
+                                childAspectRatio: 2.5,
+                              ),
+                          itemCount: controller.immediateTreatments.length,
+                          itemBuilder: (context, index) {
+                            final item = controller.immediateTreatments[index];
 
-                          return Obx(() {
-                            final isChecked = controller.isSelected(index);
-
-                            return GestureDetector(
-                              onTap: () => controller.toggleSelection(index),
-                              child: Container(
+                            return Obx(() {
+                              final isChecked = controller.isSelected(index);
+                              return Container(
                                 decoration: BoxDecoration(
                                   color: isChecked
                                       ? Colors.green.withAlpha(30)
@@ -481,11 +583,28 @@ class MainScreen extends StatelessWidget {
                                     SmallLightText(title: item),
                                   ],
                                 ),
-                              ),
-                            );
-                          });
-                        },
-                      ),
+                              );
+                            });
+                          },
+                        );
+                      }),
+                      Obx(() {
+                        bool isOtherSelected = controller
+                            .selectedImmediateTreatments
+                            .contains(7);
+                        return isOtherSelected
+                            ? Padding(
+                                padding: const EdgeInsets.only(top: 15),
+                                child: CustomTextField(
+                                  label: 'Specify Other Treatment',
+                                  hintText: 'e.g. Oxygen, Medication, etc.',
+                                  onChanged: (val) {
+                                    controller.otherTreatmentText.value = val;
+                                  },
+                                ),
+                              )
+                            : Container();
+                      }),
                     ],
                   ),
                 ),
@@ -577,6 +696,7 @@ class MainScreen extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 10),
+                // FrontBodyMale(),
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -600,6 +720,69 @@ class MainScreen extends StatelessWidget {
                           Obx(() {
                             return InkWell(
                               onTap: () {
+                                controller.toggleIsMale(true);
+                              },
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 9,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: controller.isMale.value
+                                      ? AppColors.textBlack
+                                      : AppColors.white,
+                                  border: Border.all(
+                                    color: AppColors.lightGray,
+                                  ),
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                                child: SmallLightText(
+                                  title: 'Male',
+                                  textColor: controller.isMale.value == false
+                                      ? AppColors.textBlack
+                                      : AppColors.white,
+                                ),
+                              ),
+                            );
+                          }),
+                          SizedBox(width: 10),
+                          Obx(() {
+                            return InkWell(
+                              onTap: () {
+                                controller.toggleIsMale(false);
+                              },
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 9,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: controller.isMale.value == false
+                                      ? AppColors.textBlack
+                                      : AppColors.white,
+                                  border: Border.all(
+                                    color: AppColors.lightGray,
+                                  ),
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                                child: SmallLightText(
+                                  title: 'Female',
+                                  textColor: controller.isMale.value == false
+                                      ? AppColors.white
+                                      : AppColors.textBlack,
+                                ),
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+                      SizedBox(height: 10),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Obx(() {
+                            return InkWell(
+                              onTap: () {
                                 controller.toggleIsFront(true);
                               },
                               child: Container(
@@ -609,14 +792,19 @@ class MainScreen extends StatelessWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: controller.isFront.value
-                                      ? AppColors.white
-                                      : AppColors.lightestGray,
+                                      ? AppColors.textBlack
+                                      : AppColors.white,
                                   border: Border.all(
                                     color: AppColors.lightGray,
                                   ),
                                   borderRadius: BorderRadius.circular(5),
                                 ),
-                                child: SmallLightText(title: 'Front'),
+                                child: SmallLightText(
+                                  title: 'Front',
+                                  textColor: controller.isFront.value == true
+                                      ? AppColors.white
+                                      : AppColors.textBlack,
+                                ),
                               ),
                             );
                           }),
@@ -633,53 +821,117 @@ class MainScreen extends StatelessWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: controller.isFront.value == false
-                                      ? AppColors.white
-                                      : AppColors.lightestGray,
+                                      ? AppColors.textBlack
+                                      : AppColors.white,
                                   border: Border.all(
                                     color: AppColors.lightGray,
                                   ),
                                   borderRadius: BorderRadius.circular(5),
                                 ),
-                                child: SmallLightText(title: 'Back'),
+                                child: SmallLightText(
+                                  title: 'Back',
+                                  textColor: controller.isFront.value == false
+                                      ? AppColors.white
+                                      : AppColors.textBlack,
+                                ),
                               ),
                             );
                           }),
                         ],
                       ),
                       SizedBox(height: 15),
-                      InteractiveViewer(
-                        scaleEnabled: true,
-                        panEnabled: true,
-                        constrained: true,
-                        child: InteractableSvg(
-                          svgAddress: "assets/body_front.svg",
-                          onChanged: (region) {
-                            Get.dialog(
-                              BodyMapDialog(
-                                title:
-                                    "Add Injury — ${controller.isFront.value == true ? 'Front' : 'Back'} · ${region!.name}",
-                                bodySide: controller.isFront.value == true
-                                    ? 'Front'
-                                    : 'Back',
-                                region: region.name,
-                              ),
-                            );
-                          },
-                          toggleEnable: true,
-                          isMultiSelectable: false,
-                          dotColor: Colors.black,
-                          selectedColor: Colors.green.withAlpha(40),
-                          strokeColor: Colors.blue,
-                          unSelectableId: "bg",
-                          centerDotEnable: true,
-                          centerTextEnable: true,
-                          strokeWidth: 2.0,
-                          centerTextStyle: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
+                      Obx(() {
+                        return controller.isMale.value == true
+                            ? controller.isFront.value == true
+                                  ? RepaintBoundary(
+                                      key: _frontMaleBodyKey,
+                                      child: FrontBodyMale(
+                                        selectedBodyParts:
+                                            selectedFrontMaleBodyParts,
+                                        onBodyPartSelected: (part) {
+                                          Get.dialog(
+                                            BodyMapDialog(
+                                              gender: 'Male',
+                                              title:
+                                                  "Add Injury — Front · $part",
+                                              bodySide: 'Front',
+                                              region: part,
+                                            ),
+                                          );
+                                        },
+                                        onSelectedPartsChanged:
+                                            (selectedParts) {
+                                              selectedFrontMaleBodyParts =
+                                                  selectedParts;
+                                            },
+                                      ),
+                                    )
+                                  : RepaintBoundary(
+                                      key: _backMaleBodyKey,
+                                      child: BackBodyMale(
+                                        selectedBodyParts:
+                                            selectedBackMaleBodyParts,
+                                        onBodyPartSelected: (part) {
+                                          Get.dialog(
+                                            BodyMapDialog(
+                                              gender: 'Male',
+                                              title:
+                                                  "Add Injury — Back · $part",
+                                              bodySide: 'Back',
+                                              region: part,
+                                            ),
+                                          );
+                                        },
+                                        onSelectedPartsChanged:
+                                            (selectedParts) {
+                                              selectedBackMaleBodyParts =
+                                                  selectedParts;
+                                            },
+                                      ),
+                                    )
+                            : controller.isFront.value == true
+                            ? RepaintBoundary(
+                                key: _frontFemaleBodyKey,
+                                child: FrontBodyFemale(
+                                  selectedBodyParts:
+                                      selectedFrontFemaleBodyParts,
+                                  onBodyPartSelected: (part) {
+                                    Get.dialog(
+                                      BodyMapDialog(
+                                        gender: 'Female',
+                                        title: "Add Injury — Front · $part",
+                                        bodySide: 'Front',
+                                        region: part,
+                                      ),
+                                    );
+                                  },
+                                  onSelectedPartsChanged: (selectedParts) {
+                                    selectedFrontFemaleBodyParts =
+                                        selectedParts;
+                                  },
+                                ),
+                              )
+                            : RepaintBoundary(
+                                key: _backFemaleBodyKey,
+                                child: BackBodyFemale(
+                                  selectedBodyParts:
+                                      selectedBackFemaleBodyParts,
+                                  onBodyPartSelected: (part) {
+                                    Get.dialog(
+                                      BodyMapDialog(
+                                        gender: 'Female',
+                                        title: "Add Injury — Back · $part",
+                                        bodySide: 'Back',
+                                        region: part,
+                                      ),
+                                    );
+                                  },
+                                  onSelectedPartsChanged: (selectedParts) {
+                                    selectedBackFemaleBodyParts = selectedParts;
+                                  },
+                                ),
+                              );
+                      }),
                       SizedBox(height: 20),
                       Obx(() {
                         return controller.bodyInjuryList.isEmpty == true
@@ -690,6 +942,11 @@ class MainScreen extends StatelessWidget {
                                 itemBuilder: (context, index) {
                                   return Obx(() {
                                     return BodyInjuryWidget(
+                                      gender:
+                                          controller
+                                              .bodyInjuryList[index]
+                                              .gender ??
+                                          'Male',
                                       injuryType: controller
                                           .bodyInjuryList[index]
                                           .injuryType,
@@ -794,6 +1051,15 @@ class MainScreen extends StatelessWidget {
                       ),
                       SizedBox(height: 10),
                       Obx(() {
+                        if (!controller.dispositionsList.toList().contains(
+                              controller.selectedDisposition.value,
+                            ) &&
+                            controller.dispositionsList.toList().isNotEmpty) {
+                          controller.selectedDisposition.value = controller
+                              .dispositionsList
+                              .toList()
+                              .first;
+                        }
                         return CustomDropdown(
                           label: 'Disposition',
                           onChanged: (val) {
@@ -802,8 +1068,26 @@ class MainScreen extends StatelessWidget {
                             }
                           },
                           currentValue: controller.selectedDisposition.value,
-                          items: controller.dispositionsList,
+                          items: controller.dispositionsList.toList(),
                         );
+                      }),
+                      Obx(() {
+                        return controller.selectedDisposition.value == "Other"
+                            ? Padding(
+                                padding: const EdgeInsets.only(
+                                  top: 3.0,
+                                  bottom: 4,
+                                ),
+                                child: CustomTextField(
+                                  label: 'Specify Other Disposition',
+                                  hintText:
+                                      'e.g. Follow-up required, Referred to clinic/ER',
+                                  onChanged: (val) {
+                                    controller.otherDispositionText.value = val;
+                                  },
+                                ),
+                              )
+                            : Container();
                       }),
                       SizedBox(height: 14),
                       Obx(() {
@@ -846,83 +1130,205 @@ class MainScreen extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 20),
-                PlainButton(text: 'Export PDF', onTap: () async {
+                PlainButton(
+                  text: 'Export PDF',
+                  onTap: () async {
+                    EasyLoading.show();
+                    final responderSig = await BaseHelper().getSignatureBytes(
+                      _responderKey,
+                    );
+                    final patientSig = await BaseHelper().getSignatureBytes(
+                      _patientKey,
+                    );
+                    final guardianSig = await BaseHelper().getSignatureBytes(
+                      _guardianKey,
+                    );
+                    final vitalsList = controller.vitalSets
+                        .map((v) => v.toMap())
+                        .toList();
+                    final bodyMapDescriptions = controller.bodyInjuryList.map((
+                      injury,
+                    ) {
+                      return {
+                        "bodySide": injury.bodySide ?? '',
+                        "region": injury.region ?? '',
+                        "gender": injury.gender ?? '',
+                        "injuryType": injury.injuryType ?? '',
+                        "severity": injury.severity ?? '',
+                        "notes": injury.notes ?? '',
+                      };
+                    }).toList();
 
-                  final responderSig = await BaseHelper().getSignatureBytes(_responderKey);
-                  final patientSig   = await BaseHelper().getSignatureBytes(_patientKey);
-                  final guardianSig  = await BaseHelper().getSignatureBytes(_guardianKey);
-                  final vitalsList = controller.vitalSets.map((v) => v.toMap()).toList();
-                  final bodyMapDescriptions = controller.bodyInjuryList.map((injury) {
-                    return {
-                      "bodySide": injury.bodySide ?? '',
-                      "region": injury.region ?? '',
-                      "injuryType": injury.injuryType ?? '',
-                      "severity": injury.severity ?? '',
-                      "notes": injury.notes ?? '',
+                    final photosList = await Future.wait(
+                      controller.pickedPhotos.map(
+                        (img) async => {
+                          "pickedAt": img.pickedAt.toIso8601String(),
+                          "file": await img.file.readAsBytes(),
+                          "caption": img.caption ?? "",
+                        },
+                      ),
+                    );
+
+                    Uint8List? logoBytes;
+                    if (controller.logoImage.value != null &&
+                        await controller.logoImage.value!.exists()) {
+                      try {
+                        logoBytes = await controller.logoImage.value!
+                            .readAsBytes();
+                      } catch (e) {
+                        logoBytes = null;
+                      }
+                    }
+
+                    List<String> treatmentsStrList = [];
+                    for (
+                      int i = 0;
+                      i < controller.selectedImmediateTreatments.length;
+                      i++
+                    ) {
+                      String treatment = controller.immediateTreatments
+                          .toList()[controller.selectedImmediateTreatments[i]];
+                      if (treatment == "Other" &&
+                          controller.otherTreatmentText.value.isNotEmpty) {
+                        treatmentsStrList.add(
+                          controller.otherTreatmentText.value,
+                        );
+                      } else {
+                        treatmentsStrList.add(treatment);
+                      }
+                    }
+
+                    final List<Map<String, dynamic>> bodyWidgetDescriptions =
+                        [];
+
+                    if (selectedFrontMaleBodyParts.isNotEmpty) {
+                      final imageBytes =
+                          await BodyWidgetPdfHelper.captureWidgetAsImage(
+                            _frontMaleBodyKey,
+                          );
+                      if (imageBytes != null) {
+                        bodyWidgetDescriptions.add({
+                          'type': 'front_male',
+                          'title': 'Male Front View - Selected Injuries',
+                          'selectedParts': selectedFrontMaleBodyParts.toList(),
+                          'imageBytes': imageBytes,
+                        });
+                      }
+                    }
+
+                    if (selectedBackMaleBodyParts.isNotEmpty) {
+                      final imageBytes =
+                          await BodyWidgetPdfHelper.captureWidgetAsImage(
+                            _backMaleBodyKey,
+                          );
+                      if (imageBytes != null) {
+                        bodyWidgetDescriptions.add({
+                          'type': 'back_male',
+                          'title': 'Male Back View - Selected Injuries',
+                          'selectedParts': selectedBackMaleBodyParts.toList(),
+                          'imageBytes': imageBytes,
+                        });
+                      }
+                    }
+
+                    if (selectedFrontFemaleBodyParts.isNotEmpty) {
+                      final imageBytes =
+                          await BodyWidgetPdfHelper.captureWidgetAsImage(
+                            _frontFemaleBodyKey,
+                          );
+                      if (imageBytes != null) {
+                        bodyWidgetDescriptions.add({
+                          'type': 'front_female',
+                          'title': 'Female Front View - Selected Injuries',
+                          'selectedParts': selectedFrontFemaleBodyParts
+                              .toList(),
+                          'imageBytes': imageBytes,
+                        });
+                      }
+                    }
+
+                    if (selectedBackFemaleBodyParts.isNotEmpty) {
+                      final imageBytes =
+                          await BodyWidgetPdfHelper.captureWidgetAsImage(
+                            _backFemaleBodyKey,
+                          );
+                      if (imageBytes != null) {
+                        bodyWidgetDescriptions.add({
+                          'type': 'back_female',
+                          'title': 'Female Back View - Selected Injuries',
+                          'selectedParts': selectedBackFemaleBodyParts.toList(),
+                          'imageBytes': imageBytes,
+                        });
+                      }
+                    }
+
+                    final Map<String, dynamic> mapData = {
+                      "logoImage": logoBytes,
+                      "incidentDate": controller.occurredDateController?.text,
+                      "name":
+                          "${controller.firstNameController?.text} ${controller.lastNameController?.text}",
+                      "studentId": "${controller.studentIDController?.text}",
+                      "gender": "${controller.selectedSubjectGender}",
+                      "dob": "${controller.dobController?.text}",
+
+                      "site": "${controller.siteController?.text}",
+                      "location": "${controller.locationController?.text}",
+                      "activity": "${controller.activityController?.text}",
+                      "severity": controller.finalSeverity,
+                      "mechanism": "${controller.mechanismController?.text}",
+                      "injuryType": controller.finalInjuryType,
+                      "illnessType": controller.finalIllnessType,
+
+                      "bodyWidgetImages": bodyWidgetDescriptions,
+
+                      "chiefComplaint":
+                          "${controller.chiefComplaintController?.text}",
+                      "notes": "${controller.notesController?.text}",
+
+                      "treatments": treatmentsStrList.join(', '),
+                      "vitals": vitalsList,
+
+                      "bodyMap": bodyMapDescriptions,
+
+                      "photos": photosList,
+
+                      "signResponder": responderSig,
+                      "signPatient": patientSig,
+                      "signGuardian": guardianSig,
+
+                      "disposition": controller.finalDisposition,
                     };
-                  }).toList();
 
-                  final photosList = await Future.wait(
-                    controller.pickedPhotos.map((img) async => {
-                      "pickedAt": img.pickedAt.toIso8601String(),
-                      "file": await img.file.readAsBytes(),
-                      "caption": img.caption ?? "",
-                    }),
-                  );
+                    final pdfBytes = await generateNewIncidentReportPdf(
+                      mapData,
+                    );
+                    final dir = await getApplicationDocumentsDirectory();
+                    final fileName =
+                        "incident_report_${DateTime.now().millisecondsSinceEpoch}.pdf";
+                    final file = File("${dir.path}/$fileName");
+                    await file.writeAsBytes(pdfBytes);
+                    final reportMeta = {
+                      "filePath": file.path,
+                      "createdAt": DateTime.now().toIso8601String(),
+                      "name": mapData["name"],
+                      "incidentDate": mapData["incidentDate"],
+                      "notes": mapData["notes"],
+                      "mapData": mapData,
+                    };
 
-                  List<String> treatmentsStrList = [];
-                  for(int i = 0; i<controller.selectedImmediateTreatments.length; i++){
-                    treatmentsStrList.add(immediateTreatments[controller.selectedImmediateTreatments[i]]);
-                  }
-
-                  final Map<String, dynamic> mapData = {
-                    "incidentDate": controller.occurredDateController?.text,
-                    "name": "${controller.firstNameController?.text} ${controller.lastNameController?.text}",
-                    "studentId": "${controller.studentIDController?.text}",
-                    "gender": "${controller.selectedSubjectGender}",
-                    "dob": "${controller.dobController?.text}",
-
-                    "site": "${controller.siteController?.text}",
-                    "location": "${controller.locationController?.text}",
-                    "activity": "${controller.activityController?.text}",
-                    "severity": "${controller.selectedInjurySeverity}",
-                    "mechanism": "${controller.mechanismController?.text}",
-                    "injuryType": "${controller.selectedCommonInjuryType}",
-                    "illnessType": "${controller.selectedCommonIllnessType}",
-
-                    "chiefComplaint": "${controller.chiefComplaintController?.text}",
-                    "notes": "${controller.notesController?.text}",
-
-                    "treatments": treatmentsStrList.join(', '),
-                    "vitals": vitalsList,
-
-                    "bodyMap": bodyMapDescriptions,
-
-                    "photos": photosList,
-
-                    "signResponder": responderSig,
-                    "signPatient": patientSig,
-                    "signGuardian": guardianSig,
-                  };
-                  final pdfBytes = await generateIncidentReportPdf(mapData);
-                  final dir = await getApplicationDocumentsDirectory();
-                  final fileName = "incident_report_${DateTime.now().millisecondsSinceEpoch}.pdf";
-                  final file = File("${dir.path}/$fileName");
-                  await file.writeAsBytes(pdfBytes);
-                  final reportMeta = {
-                    "filePath": file.path,
-                    "createdAt": DateTime.now().toIso8601String(),
-                    "name": mapData["name"],
-                    "incidentDate": mapData["incidentDate"],
-                    "notes": mapData["notes"],
-                  };
-
-                  await saveReportMetadata(reportMeta);
-                  await Printing.layoutPdf(
-                    name: fileName,
-                    onLayout: (format) async => pdfBytes,
-                  );
-                }),
+                    await saveReportMetadata(reportMeta);
+                    EasyLoading.dismiss();
+                    await Printing.layoutPdf(
+                      name: fileName,
+                      onLayout: (format) async => pdfBytes,
+                    );
+                    controller.resetAllData();
+                    _responderKey.currentState?.clear();
+                    _patientKey.currentState?.clear();
+                    _guardianKey.currentState?.clear();
+                    Get.offAll(MainScreen());
+                  },
+                ),
                 SizedBox(height: 10),
               ],
             ),
@@ -961,18 +1367,20 @@ class MainScreen extends StatelessWidget {
                   backgroundColor: AppColors.lightestGray,
                 ),
                 Positioned(
-                    bottom: 10,
-                    right: 10,
-                    child: PlainButton(
-                        outLined: true,
-                        fontSize: 12,
-                        backgroundColor: AppColors.lightGray,
-                        horizontalPadding: 7,
-                        height: 28,
-                        text: 'Clear',
-                        onTap: (){
-                          key?.currentState!.clear();
-                        }))
+                  bottom: 10,
+                  right: 10,
+                  child: PlainButton(
+                    outLined: true,
+                    fontSize: 12,
+                    backgroundColor: AppColors.lightGray,
+                    horizontalPadding: 7,
+                    height: 28,
+                    text: 'Clear',
+                    onTap: () {
+                      key?.currentState!.clear();
+                    },
+                  ),
+                ),
               ],
             ),
           ),
