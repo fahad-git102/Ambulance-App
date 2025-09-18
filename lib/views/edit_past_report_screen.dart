@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:ambulance_app/components/buttons/plain_button.dart';
@@ -19,25 +18,36 @@ import 'package:ambulance_app/core/app_contants.dart';
 import 'package:ambulance_app/core/base_helper.dart';
 import 'package:ambulance_app/core/new_pdf_generator.dart';
 import 'package:ambulance_app/viewmodels/main_controller.dart';
-import 'package:ambulance_app/views/resports_list_screen.dart';
-import 'package:ambulance_app/views/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get.dart';
-import 'package:interactable_svg/interactable_svg/interactable_svg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:syncfusion_flutter_signaturepad/signaturepad.dart';
-
 import '../components/bottomsheets/image_picker_bottomsheet.dart';
 import '../components/common_widgets/back_body_male.dart';
 import '../components/dialogs/edit_body_map_dialog.dart';
 import '../core/body_pdf_helper.dart';
+import '../models/body_injury.dart';
+import '../models/image_model.dart';
+import '../models/vitals_sets.dart';
 
-class MainScreen extends StatelessWidget {
-  MainScreen({super.key});
+class EditPastReportScreen extends StatefulWidget {
+  final Map<String, dynamic> reportData;
+  final int reportIndex;
 
+  const EditPastReportScreen({
+    super.key,
+    required this.reportData,
+    required this.reportIndex,
+  });
+
+  @override
+  State<EditPastReportScreen> createState() => _EditReportScreenState();
+}
+
+class _EditReportScreenState extends State<EditPastReportScreen> {
   final DateTime initialDate = DateTime.now();
   final GlobalKey<SfSignaturePadState> _responderKey = GlobalKey();
   final GlobalKey<SfSignaturePadState> _patientKey = GlobalKey();
@@ -51,9 +61,25 @@ class MainScreen extends StatelessWidget {
   final GlobalKey _frontFemaleBodyKey = GlobalKey();
   final GlobalKey _backFemaleBodyKey = GlobalKey();
 
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize after the first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_initialized) {
+        final controller = Get.find<MainController>();
+        _initializeControllerData(controller);
+        _initialized = true;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<MainController>();
+
     return Scaffold(
       backgroundColor: AppColors.white,
       appBar: AppBar(
@@ -64,7 +90,7 @@ class MainScreen extends StatelessWidget {
             Image.asset('assets/ambulance_logo.png', height: 70, width: 70),
             SizedBox(width: 10),
             CustomBoldText(
-              title: 'School E Pcr',
+              title: 'Edit Report',
               textColor: AppColors.textBlack,
               fontSize: 19,
               fontWeight: FontWeight.w800,
@@ -72,35 +98,6 @@ class MainScreen extends StatelessWidget {
           ],
         ),
         centerTitle: true,
-        actions: [
-          PopupMenuButton<String>(
-            icon: Icon(Icons.more_vert, color: AppColors.textBlack),
-            onSelected: (value) {
-              if (value == 'report') {
-                // navigate to report form
-              } else if (value == 'past') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (context) => ReportsListScreen(),
-                  ),
-                );
-              } else if (value == 'settings') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (context) => SettingsScreen(),
-                  ),
-                );
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(value: 'report', child: Text('Report Form')),
-              PopupMenuItem(value: 'past', child: Text('Past Reports')),
-              PopupMenuItem(value: 'settings', child: Text('Settings')),
-            ],
-          ),
-        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -124,9 +121,11 @@ class MainScreen extends StatelessWidget {
                       const SizedBox(height: 10),
                       Obx(() {
                         if (!controller.subjectType.toList().contains(
-                              controller.selectedSubjectType.value,
-                            ) &&
-                            controller.subjectType.toList().isNotEmpty) {
+                          controller.selectedSubjectType.value,
+                        ) &&
+                            controller.subjectType
+                                .toList()
+                                .isNotEmpty) {
                           controller.selectedSubjectType.value = controller
                               .subjectType
                               .toList()
@@ -231,9 +230,11 @@ class MainScreen extends StatelessWidget {
                       const SizedBox(height: 7),
                       Obx(() {
                         if (!controller.injurySeverity.toList().contains(
-                              controller.selectedInjurySeverity.value,
-                            ) &&
-                            controller.injurySeverity.toList().isNotEmpty) {
+                          controller.selectedInjurySeverity.value,
+                        ) &&
+                            controller.injurySeverity
+                                .toList()
+                                .isNotEmpty) {
                           controller.selectedInjurySeverity.value = controller
                               .injurySeverity
                               .toList()
@@ -252,28 +253,30 @@ class MainScreen extends StatelessWidget {
                       }),
                       Obx(() {
                         return controller.selectedInjurySeverity.value ==
-                                "Other"
+                            "Other"
                             ? Padding(
-                                padding: const EdgeInsets.only(
-                                  top: 3.0,
-                                  bottom: 4,
-                                ),
-                                child: CustomTextField(
-                                  label: 'Specify Other Severity',
-                                  hintText: 'e.g. Critical, Fatal',
-                                  onChanged: (val) {
-                                    controller.otherSeverityText.value = val;
-                                  },
-                                ),
-                              )
+                          padding: const EdgeInsets.only(
+                            top: 3.0,
+                            bottom: 4,
+                          ),
+                          child: CustomTextField(
+                            label: 'Specify Other Severity',
+                            hintText: 'e.g. Critical, Fatal',
+                            onChanged: (val) {
+                              controller.otherSeverityText.value = val;
+                            },
+                          ),
+                        )
                             : Container();
                       }),
                       const SizedBox(height: 7),
                       Obx(() {
                         if (!controller.commonInjuryType.toList().contains(
-                              controller.selectedCommonInjuryType.value,
-                            ) &&
-                            controller.commonInjuryType.toList().isNotEmpty) {
+                          controller.selectedCommonInjuryType.value,
+                        ) &&
+                            controller.commonInjuryType
+                                .toList()
+                                .isNotEmpty) {
                           controller.selectedCommonInjuryType.value = controller
                               .commonInjuryType
                               .toList()
@@ -287,36 +290,40 @@ class MainScreen extends StatelessWidget {
                             }
                           },
                           currentValue:
-                              controller.selectedCommonInjuryType.value,
+                          controller.selectedCommonInjuryType.value,
                           items: controller.commonInjuryType.toList(),
                         );
                       }),
                       Obx(() {
                         return controller.selectedCommonInjuryType.value ==
-                                "Other"
+                            "Other"
                             ? Padding(
-                                padding: const EdgeInsets.only(
-                                  top: 3.0,
-                                  bottom: 4,
-                                ),
-                                child: CustomTextField(
-                                  label: 'Specify Other Injury',
-                                  hintText: 'e.g. Finger Jam, Ear laceration',
-                                  onChanged: (val) {
-                                    controller.otherInjuryText.value = val;
-                                  },
-                                ),
-                              )
+                          padding: const EdgeInsets.only(
+                            top: 3.0,
+                            bottom: 4,
+                          ),
+                          child: CustomTextField(
+                            label: 'Specify Other Injury',
+                            hintText: 'e.g. Finger Jam, Ear laceration',
+                            onChanged: (val) {
+                              controller.otherInjuryText.value = val;
+                            },
+                          ),
+                        )
                             : Container();
                       }),
                       const SizedBox(height: 7),
                       Obx(() {
                         if (!controller.commonIllnessType.toList().contains(
-                              controller.selectedCommonIllnessType.value,
-                            ) &&
-                            controller.commonIllnessType.toList().isNotEmpty) {
+                          controller.selectedCommonIllnessType.value,
+                        ) &&
+                            controller.commonIllnessType
+                                .toList()
+                                .isNotEmpty) {
                           controller.selectedCommonIllnessType.value =
-                              controller.commonIllnessType.toList().first;
+                              controller.commonIllnessType
+                                  .toList()
+                                  .first;
                         }
                         return CustomDropdown(
                           label: 'Common Illness Type',
@@ -326,26 +333,26 @@ class MainScreen extends StatelessWidget {
                             }
                           },
                           currentValue:
-                              controller.selectedCommonIllnessType.value,
+                          controller.selectedCommonIllnessType.value,
                           items: controller.commonIllnessType.toList(),
                         );
                       }),
                       Obx(() {
                         return controller.selectedCommonIllnessType.value ==
-                                "Other"
+                            "Other"
                             ? Padding(
-                                padding: const EdgeInsets.only(
-                                  top: 3.0,
-                                  bottom: 4,
-                                ),
-                                child: CustomTextField(
-                                  label: 'Specify Other Illness',
-                                  hintText: 'e.g. Migraine, Stomach bug',
-                                  onChanged: (val) {
-                                    controller.otherIllnessText.value = val;
-                                  },
-                                ),
-                              )
+                          padding: const EdgeInsets.only(
+                            top: 3.0,
+                            bottom: 4,
+                          ),
+                          child: CustomTextField(
+                            label: 'Specify Other Illness',
+                            hintText: 'e.g. Migraine, Stomach bug',
+                            onChanged: (val) {
+                              controller.otherIllnessText.value = val;
+                            },
+                          ),
+                        )
                             : Container();
                       }),
                       const SizedBox(height: 7),
@@ -401,10 +408,18 @@ class MainScreen extends StatelessWidget {
                       SizedBox(height: 14),
                       Obx(() {
                         return Column(
-                          children: List.generate(controller.vitalSets.length, (
-                            index,
-                          ) {
+                          children: List.generate(
+                              controller.vitalSets.length, (index,) {
                             final vital = controller.vitalSets[index];
+                            print(vital.time.text);
+                            print(vital.bgl.text);
+                            print(vital.temp.text);
+                            print(vital.spo2.text);
+                            print(vital.bpDia.text);
+                            print(vital.bpSys.text);
+                            print(vital.gcs.text);
+                            print(vital.hr.text);
+                            print(vital.rr.text);
                             return Container(
                               margin: EdgeInsets.only(bottom: 13),
                               padding: const EdgeInsets.symmetric(
@@ -421,7 +436,7 @@ class MainScreen extends StatelessWidget {
                                 children: [
                                   Row(
                                     crossAxisAlignment:
-                                        CrossAxisAlignment.center,
+                                    CrossAxisAlignment.center,
                                     children: [
                                       Expanded(
                                         flex: 2,
@@ -454,7 +469,7 @@ class MainScreen extends StatelessWidget {
                                   const SizedBox(height: 7),
                                   Row(
                                     crossAxisAlignment:
-                                        CrossAxisAlignment.center,
+                                    CrossAxisAlignment.center,
                                     children: [
                                       Expanded(
                                         child: CustomTextField(
@@ -474,7 +489,7 @@ class MainScreen extends StatelessWidget {
                                   SizedBox(height: 10),
                                   Row(
                                     crossAxisAlignment:
-                                        CrossAxisAlignment.center,
+                                    CrossAxisAlignment.center,
                                     children: [
                                       Expanded(
                                         child: CustomTextField(
@@ -494,7 +509,7 @@ class MainScreen extends StatelessWidget {
                                   SizedBox(height: 10),
                                   Row(
                                     crossAxisAlignment:
-                                        CrossAxisAlignment.end,
+                                    CrossAxisAlignment.end,
                                     children: [
                                       Expanded(
                                         child: CustomTextField(
@@ -565,12 +580,12 @@ class MainScreen extends StatelessWidget {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 9,
-                                mainAxisSpacing: 9,
-                                childAspectRatio: 2.5,
-                              ),
+                          SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 9,
+                            mainAxisSpacing: 9,
+                            childAspectRatio: 2.5,
+                          ),
                           itemCount: controller.immediateTreatments.length,
                           itemBuilder: (context, index) {
                             final item = controller.immediateTreatments[index];
@@ -596,7 +611,7 @@ class MainScreen extends StatelessWidget {
                                     Checkbox(
                                       value: isChecked,
                                       materialTapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
+                                      MaterialTapTargetSize.shrinkWrap,
                                       onChanged: (_) =>
                                           controller.toggleSelection(index),
                                     ),
@@ -614,15 +629,15 @@ class MainScreen extends StatelessWidget {
                             .contains(7);
                         return isOtherSelected
                             ? Padding(
-                                padding: const EdgeInsets.only(top: 15),
-                                child: CustomTextField(
-                                  label: 'Specify Other Treatment',
-                                  hintText: 'e.g. Oxygen, Medication, etc.',
-                                  onChanged: (val) {
-                                    controller.otherTreatmentText.value = val;
-                                  },
-                                ),
-                              )
+                          padding: const EdgeInsets.only(top: 15),
+                          child: CustomTextField(
+                            label: 'Specify Other Treatment',
+                            hintText: 'e.g. Oxygen, Medication, etc.',
+                            onChanged: (val) {
+                              controller.otherTreatmentText.value = val;
+                            },
+                          ),
+                        )
                             : Container();
                       }),
                     ],
@@ -651,7 +666,7 @@ class MainScreen extends StatelessWidget {
                                 Checkbox(
                                   value: controller.guardianConsentOnFile.value,
                                   materialTapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
+                                  MaterialTapTargetSize.shrinkWrap,
                                   onChanged: (_) =>
                                       controller.toggleGuardianConsentOnFile(),
                                 ),
@@ -670,25 +685,25 @@ class MainScreen extends StatelessWidget {
                         return controller.pickedPhotos.isEmpty
                             ? Container()
                             : Padding(
-                                padding: EdgeInsets.only(bottom: 18),
-                                child: ListView.separated(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemBuilder: (context, index) {
-                                    return PhotoWidget(
-                                      imageModel:
-                                          controller.pickedPhotos[index],
-                                      onRemove: () {
-                                        controller.removeImage(index);
-                                      },
-                                    );
-                                  },
-                                  separatorBuilder: (context, index) {
-                                    return SizedBox(height: 8);
-                                  },
-                                  itemCount: controller.pickedPhotos.length,
-                                ),
+                          padding: EdgeInsets.only(bottom: 18),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemBuilder: (context, index) {
+                              return PhotoWidget(
+                                imageModel:
+                                controller.pickedPhotos[index],
+                                onRemove: () {
+                                  controller.removeImage(index);
+                                },
                               );
+                            },
+                            separatorBuilder: (context, index) {
+                              return SizedBox(height: 8);
+                            },
+                            itemCount: controller.pickedPhotos.length,
+                          ),
+                        );
                       }),
                       PlainButton(
                         text: 'Add Photo',
@@ -716,7 +731,6 @@ class MainScreen extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 10),
-                // FrontBodyMale(),
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -727,10 +741,10 @@ class MainScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CustomBoldText(title: 'Body Map (male)', fontSize: 19),
+                      CustomBoldText(title: 'Body Map', fontSize: 19),
                       SmallLightText(
                         title:
-                            'Click a hotspot to add; edit or duplicate marks from the list.',
+                        'Click a hotspot to add; edit or duplicate marks from the list.',
                         textColor: AppColors.darkGray,
                       ),
                       SizedBox(height: 10),
@@ -863,198 +877,203 @@ class MainScreen extends StatelessWidget {
                       Obx(() {
                         return controller.isMale.value == true
                             ? controller.isFront.value == true
-                                  ? RepaintBoundary(
-                                      key: _frontMaleBodyKey,
-                                      child: FrontBodyMale(
-                                        selectedBodyParts:
-                                            selectedFrontMaleBodyParts,
-                                        onBodyPartSelected: (part) {
-                                          Get.dialog(
-                                            BodyMapDialog(
-                                              gender: 'Male',
-                                              title:
-                                                  "Add Injury — Front · $part",
-                                              bodySide: 'Front',
-                                              region: part,
-                                            ),
-                                          );
-                                        },
-                                        onSelectedPartsChanged:
-                                            (selectedParts) {
-                                              selectedFrontMaleBodyParts =
-                                                  selectedParts;
-                                            },
-                                      ),
-                                    )
-                                  : RepaintBoundary(
-                                      key: _backMaleBodyKey,
-                                      child: BackBodyMale(
-                                        selectedBodyParts:
-                                            selectedBackMaleBodyParts,
-                                        onBodyPartSelected: (part) {
-                                          Get.dialog(
-                                            BodyMapDialog(
-                                              gender: 'Male',
-                                              title:
-                                                  "Add Injury — Back · $part",
-                                              bodySide: 'Back',
-                                              region: part,
-                                            ),
-                                          );
-                                        },
-                                        onSelectedPartsChanged:
-                                            (selectedParts) {
-                                              selectedBackMaleBodyParts =
-                                                  selectedParts;
-                                            },
-                                      ),
-                                    )
-                            : controller.isFront.value == true
                             ? RepaintBoundary(
-                                key: _frontFemaleBodyKey,
-                                child: FrontBodyFemale(
-                                  selectedBodyParts:
-                                      selectedFrontFemaleBodyParts,
-                                  onBodyPartSelected: (part) {
-                                    Get.dialog(
-                                      BodyMapDialog(
-                                        gender: 'Female',
-                                        title: "Add Injury — Front · $part",
-                                        bodySide: 'Front',
-                                        region: part,
-                                      ),
-                                    );
-                                  },
-                                  onSelectedPartsChanged: (selectedParts) {
-                                    selectedFrontFemaleBodyParts =
-                                        selectedParts;
-                                  },
-                                ),
-                              )
-                            : RepaintBoundary(
-                                key: _backFemaleBodyKey,
-                                child: BackBodyFemale(
-                                  selectedBodyParts:
-                                      selectedBackFemaleBodyParts,
-                                  onBodyPartSelected: (part) {
-                                    Get.dialog(
-                                      BodyMapDialog(
-                                        gender: 'Female',
-                                        title: "Add Injury — Back · $part",
-                                        bodySide: 'Back',
-                                        region: part,
-                                      ),
-                                    );
-                                  },
-                                  onSelectedPartsChanged: (selectedParts) {
-                                    selectedBackFemaleBodyParts = selectedParts;
-                                  },
+                          key: _frontMaleBodyKey,
+                          child: FrontBodyMale(
+                            selectedBodyParts:
+                            selectedFrontMaleBodyParts,
+                            onBodyPartSelected: (part) {
+                              Get.dialog(
+                                BodyMapDialog(
+                                  gender: 'Male',
+                                  title:
+                                  "Add Injury — Front · $part",
+                                  bodySide: 'Front',
+                                  region: part,
                                 ),
                               );
+                            },
+                            onSelectedPartsChanged:
+                                (selectedParts) {
+                              selectedFrontMaleBodyParts =
+                                  selectedParts;
+                            },
+                          ),
+                        )
+                            : RepaintBoundary(
+                          key: _backMaleBodyKey,
+                          child: BackBodyMale(
+                            selectedBodyParts:
+                            selectedBackMaleBodyParts,
+                            onBodyPartSelected: (part) {
+                              Get.dialog(
+                                BodyMapDialog(
+                                  gender: 'Male',
+                                  title:
+                                  "Add Injury — Back · $part",
+                                  bodySide: 'Back',
+                                  region: part,
+                                ),
+                              );
+                            },
+                            onSelectedPartsChanged:
+                                (selectedParts) {
+                              selectedBackMaleBodyParts =
+                                  selectedParts;
+                            },
+                          ),
+                        )
+                            : controller.isFront.value == true
+                            ? RepaintBoundary(
+                          key: _frontFemaleBodyKey,
+                          child: FrontBodyFemale(
+                            selectedBodyParts:
+                            selectedFrontFemaleBodyParts,
+                            onBodyPartSelected: (part) {
+                              Get.dialog(
+                                BodyMapDialog(
+                                  gender: 'Female',
+                                  title: "Add Injury — Front · $part",
+                                  bodySide: 'Front',
+                                  region: part,
+                                ),
+                              );
+                            },
+                            onSelectedPartsChanged: (selectedParts) {
+                              selectedFrontFemaleBodyParts =
+                                  selectedParts;
+                            },
+                          ),
+                        )
+                            : RepaintBoundary(
+                          key: _backFemaleBodyKey,
+                          child: BackBodyFemale(
+                            selectedBodyParts:
+                            selectedBackFemaleBodyParts,
+                            onBodyPartSelected: (part) {
+                              Get.dialog(
+                                BodyMapDialog(
+                                  gender: 'Female',
+                                  title: "Add Injury — Back · $part",
+                                  bodySide: 'Back',
+                                  region: part,
+                                ),
+                              );
+                            },
+                            onSelectedPartsChanged: (selectedParts) {
+                              selectedBackFemaleBodyParts = selectedParts;
+                            },
+                          ),
+                        );
                       }),
                       SizedBox(height: 20),
                       Obx(() {
                         return controller.bodyInjuryList.isEmpty == true
                             ? Container()
                             : ListView.separated(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemBuilder: (context, index) {
-                                  return Obx(() {
-                                    return BodyInjuryWidget(
-                                      gender:
-                                          controller
-                                              .bodyInjuryList[index]
-                                              .gender ??
-                                          'Male',
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemBuilder: (context, index) {
+                            return Obx(() {
+                              return BodyInjuryWidget(
+                                gender:
+                                controller
+                                    .bodyInjuryList[index]
+                                    .gender ??
+                                    'Male',
+                                injuryType: controller
+                                    .bodyInjuryList[index]
+                                    .injuryType,
+                                added: controller
+                                    .bodyInjuryList[index]
+                                    .added,
+                                severity: controller
+                                    .bodyInjuryList[index]
+                                    .severity,
+                                notes: controller
+                                    .bodyInjuryList[index]
+                                    .notes,
+                                region: controller
+                                    .bodyInjuryList[index]
+                                    .region,
+                                title:
+                                '${controller.bodyInjuryList[index]
+                                    .bodySide} -- ${controller
+                                    .bodyInjuryList[index].region}',
+                                onRemoveTap: () {
+                                  controller.removeBodyInjuries(
+                                    controller.bodyInjuryList[index].id,
+                                  );
+                                },
+                                onDuplicateTap: () {
+                                  controller.addBodyInjuries(
+                                    controller.bodyInjuryList[index],
+                                  );
+                                },
+                                onEditTap: () {
+                                  Get.dialog(
+                                    EditBodyMapDialog(
+                                      injuryId: controller
+                                          .bodyInjuryList[index]
+                                          .id,
+                                      title:
+                                      "Edit Injury — ${controller
+                                          .bodyInjuryList[index]
+                                          .bodySide} · ${controller
+                                          .bodyInjuryList[index].region}",
+                                      bodySide:
+                                      controller.isFront.value == true
+                                          ? 'Front'
+                                          : 'Back',
+                                      region: controller
+                                          .bodyInjuryList[index]
+                                          .region,
                                       injuryType: controller
                                           .bodyInjuryList[index]
                                           .injuryType,
-                                      added: controller
-                                          .bodyInjuryList[index]
-                                          .added,
                                       severity: controller
                                           .bodyInjuryList[index]
                                           .severity,
                                       notes: controller
                                           .bodyInjuryList[index]
                                           .notes,
-                                      region: controller
-                                          .bodyInjuryList[index]
-                                          .region,
-                                      title:
-                                          '${controller.bodyInjuryList[index].bodySide} -- ${controller.bodyInjuryList[index].region}',
-                                      onRemoveTap: () {
-                                        controller.removeBodyInjuries(
-                                          controller.bodyInjuryList[index].id,
-                                        );
-                                      },
-                                      onDuplicateTap: () {
-                                        controller.addBodyInjuries(
-                                          controller.bodyInjuryList[index],
-                                        );
-                                      },
-                                      onEditTap: () {
-                                        Get.dialog(
-                                          EditBodyMapDialog(
-                                            injuryId: controller
-                                                .bodyInjuryList[index]
-                                                .id,
-                                            title:
-                                                "Edit Injury — ${controller.bodyInjuryList[index].bodySide} · ${controller.bodyInjuryList[index].region}",
-                                            bodySide:
-                                                controller.isFront.value == true
-                                                ? 'Front'
-                                                : 'Back',
-                                            region: controller
-                                                .bodyInjuryList[index]
-                                                .region,
-                                            injuryType: controller
-                                                .bodyInjuryList[index]
-                                                .injuryType,
-                                            severity: controller
-                                                .bodyInjuryList[index]
-                                                .severity,
-                                            notes: controller
-                                                .bodyInjuryList[index]
-                                                .notes,
-                                          ),
-                                        );
-                                      },
-                                    );
-                                  });
+                                    ),
+                                  );
                                 },
-                                separatorBuilder: (context, index) {
-                                  return SizedBox(height: 10);
-                                },
-                                itemCount: controller.bodyInjuryList.length,
                               );
+                            });
+                          },
+                          separatorBuilder: (context, index) {
+                            return SizedBox(height: 10);
+                          },
+                          itemCount: controller.bodyInjuryList.length,
+                        );
                       }),
                     ],
                   ),
                 ),
                 SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: appBoxShadow,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomBoldText(title: 'Signatures', fontSize: 19),
-                      SizedBox(height: 10),
-                      _buildSignatureWidget(_responderKey, 'Responder'),
-                      SizedBox(height: 14),
-                      _buildSignatureWidget(_patientKey, 'Patient'),
-                      SizedBox(height: 14),
-                      _buildSignatureWidget(_guardianKey, 'Guardian'),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 10),
+                // Container(
+                //   padding: const EdgeInsets.all(14),
+                //   decoration: BoxDecoration(
+                //     color: AppColors.white,
+                //     borderRadius: BorderRadius.circular(8),
+                //     boxShadow: appBoxShadow,
+                //   ),
+                //   child: Column(
+                //     crossAxisAlignment: CrossAxisAlignment.start,
+                //     children: [
+                //       CustomBoldText(title: 'Signatures', fontSize: 19),
+                //       SizedBox(height: 10),
+                //       _buildSignatureWidget(_responderKey, 'Responder'),
+                //       SizedBox(height: 14),
+                //       _buildSignatureWidget(_patientKey, 'Patient'),
+                //       SizedBox(height: 14),
+                //       _buildSignatureWidget(_guardianKey, 'Guardian'),
+                //     ],
+                //   ),
+                // ),
+                // SizedBox(height: 10),
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -1072,9 +1091,11 @@ class MainScreen extends StatelessWidget {
                       SizedBox(height: 10),
                       Obx(() {
                         if (!controller.dispositionsList.toList().contains(
-                              controller.selectedDisposition.value,
-                            ) &&
-                            controller.dispositionsList.toList().isNotEmpty) {
+                          controller.selectedDisposition.value,
+                        ) &&
+                            controller.dispositionsList
+                                .toList()
+                                .isNotEmpty) {
                           controller.selectedDisposition.value = controller
                               .dispositionsList
                               .toList()
@@ -1094,19 +1115,19 @@ class MainScreen extends StatelessWidget {
                       Obx(() {
                         return controller.selectedDisposition.value == "Other"
                             ? Padding(
-                                padding: const EdgeInsets.only(
-                                  top: 3.0,
-                                  bottom: 4,
-                                ),
-                                child: CustomTextField(
-                                  label: 'Specify Other Disposition',
-                                  hintText:
-                                      'e.g. Follow-up required, Referred to clinic/ER',
-                                  onChanged: (val) {
-                                    controller.otherDispositionText.value = val;
-                                  },
-                                ),
-                              )
+                          padding: const EdgeInsets.only(
+                            top: 3.0,
+                            bottom: 4,
+                          ),
+                          child: CustomTextField(
+                            label: 'Specify Other Disposition',
+                            hintText:
+                            'e.g. Follow-up required, Referred to clinic/ER',
+                            onChanged: (val) {
+                              controller.otherDispositionText.value = val;
+                            },
+                          ),
+                        )
                             : Container();
                       }),
                       SizedBox(height: 14),
@@ -1117,7 +1138,7 @@ class MainScreen extends StatelessWidget {
                             Checkbox(
                               value: controller.guardianNotify.value,
                               materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
+                              MaterialTapTargetSize.shrinkWrap,
                               onChanged: (_) =>
                                   controller.toggleGuardianNotify(),
                             ),
@@ -1136,7 +1157,7 @@ class MainScreen extends StatelessWidget {
                             Checkbox(
                               value: controller.adminNotify.value,
                               materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
+                              MaterialTapTargetSize.shrinkWrap,
                               onChanged: (_) => controller.toggleAdminNotify(),
                             ),
                             CustomBoldText(
@@ -1151,205 +1172,9 @@ class MainScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 20),
                 PlainButton(
-                  text: 'Export PDF',
+                  text: 'Update Report',
                   onTap: () async {
-                    EasyLoading.show();
-                    final responderSig = await BaseHelper().getSignatureBytes(
-                      _responderKey,
-                    );
-                    final patientSig = await BaseHelper().getSignatureBytes(
-                      _patientKey,
-                    );
-                    final guardianSig = await BaseHelper().getSignatureBytes(
-                      _guardianKey,
-                    );
-                    final vitalsList = controller.vitalSets
-                        .map((v) => v.toMap())
-                        .toList();
-                    print(vitalsList);
-                    final bodyMapDescriptions = controller.bodyInjuryList.map((
-                      injury,
-                    ) {
-                      return {
-                        "bodySide": injury.bodySide ?? '',
-                        "region": injury.region ?? '',
-                        "gender": injury.gender ?? '',
-                        "injuryType": injury.injuryType ?? '',
-                        "severity": injury.severity ?? '',
-                        "notes": injury.notes ?? '',
-                      };
-                    }).toList();
-
-                    final photosList = await Future.wait(
-                      controller.pickedPhotos.map(
-                        (img) async => {
-                          "pickedAt": img.pickedAt.toIso8601String(),
-                          "file": await img.file.readAsBytes(),
-                          "caption": img.caption ?? "",
-                        },
-                      ),
-                    );
-
-                    Uint8List? logoBytes;
-                    if (controller.logoImage.value != null &&
-                        await controller.logoImage.value!.exists()) {
-                      try {
-                        logoBytes = await controller.logoImage.value!
-                            .readAsBytes();
-                      } catch (e) {
-                        logoBytes = null;
-                      }
-                    }
-
-                    List<String> treatmentsStrList = [];
-                    for (
-                      int i = 0;
-                      i < controller.selectedImmediateTreatments.length;
-                      i++
-                    ) {
-                      String treatment = controller.immediateTreatments
-                          .toList()[controller.selectedImmediateTreatments[i]];
-                      if (treatment == "Other" &&
-                          controller.otherTreatmentText.value.isNotEmpty) {
-                        treatmentsStrList.add(
-                          controller.otherTreatmentText.value,
-                        );
-                      } else {
-                        treatmentsStrList.add(treatment);
-                      }
-                    }
-
-                    final List<Map<String, dynamic>> bodyWidgetDescriptions =
-                        [];
-
-                    if (selectedFrontMaleBodyParts.isNotEmpty) {
-                      final imageBytes =
-                          await BodyWidgetPdfHelper.captureWidgetAsImage(
-                            _frontMaleBodyKey,
-                          );
-                      if (imageBytes != null) {
-                        bodyWidgetDescriptions.add({
-                          'type': 'front_male',
-                          'title': 'Male Front View - Selected Injuries',
-                          'selectedParts': selectedFrontMaleBodyParts.toList(),
-                          'imageBytes': imageBytes,
-                        });
-                      }
-                    }
-
-                    if (selectedBackMaleBodyParts.isNotEmpty) {
-                      final imageBytes =
-                          await BodyWidgetPdfHelper.captureWidgetAsImage(
-                            _backMaleBodyKey,
-                          );
-                      if (imageBytes != null) {
-                        bodyWidgetDescriptions.add({
-                          'type': 'back_male',
-                          'title': 'Male Back View - Selected Injuries',
-                          'selectedParts': selectedBackMaleBodyParts.toList(),
-                          'imageBytes': imageBytes,
-                        });
-                      }
-                    }
-
-                    if (selectedFrontFemaleBodyParts.isNotEmpty) {
-                      final imageBytes =
-                          await BodyWidgetPdfHelper.captureWidgetAsImage(
-                            _frontFemaleBodyKey,
-                          );
-                      if (imageBytes != null) {
-                        bodyWidgetDescriptions.add({
-                          'type': 'front_female',
-                          'title': 'Female Front View - Selected Injuries',
-                          'selectedParts': selectedFrontFemaleBodyParts
-                              .toList(),
-                          'imageBytes': imageBytes,
-                        });
-                      }
-                    }
-
-                    if (selectedBackFemaleBodyParts.isNotEmpty) {
-                      final imageBytes =
-                          await BodyWidgetPdfHelper.captureWidgetAsImage(
-                            _backFemaleBodyKey,
-                          );
-                      if (imageBytes != null) {
-                        bodyWidgetDescriptions.add({
-                          'type': 'back_female',
-                          'title': 'Female Back View - Selected Injuries',
-                          'selectedParts': selectedBackFemaleBodyParts.toList(),
-                          'imageBytes': imageBytes,
-                        });
-                      }
-                    }
-
-                    final Map<String, dynamic> mapData = {
-                      "logoImage": logoBytes,
-                      "incident_id": generateSiteId(controller.siteController?.text??'site'),
-                      "incidentDate": controller.occurredDateController?.text,
-                      "name":
-                          "${controller.firstNameController?.text} ${controller.lastNameController?.text}",
-                      "studentId": "${controller.studentIDController?.text}",
-                      "gender": "${controller.selectedSubjectGender}",
-                      "dob": "${controller.dobController?.text}",
-                      "unit": controller.isCelsius.value == true ? '°C':'°F',
-
-                      "site": "${controller.siteController?.text}",
-                      "location": "${controller.locationController?.text}",
-                      "activity": "${controller.activityController?.text}",
-                      "severity": controller.finalSeverity,
-                      "mechanism": "${controller.mechanismController?.text}",
-                      "injuryType": controller.finalInjuryType,
-                      "illnessType": controller.finalIllnessType,
-
-                      "bodyWidgetImages": bodyWidgetDescriptions,
-
-                      "chiefComplaint":
-                          "${controller.chiefComplaintController?.text}",
-                      "notes": "${controller.notesController?.text}",
-
-                      "treatments": treatmentsStrList.join(', '),
-                      "vitals": vitalsList,
-
-                      "bodyMap": bodyMapDescriptions,
-
-                      "photos": photosList,
-
-                      "signResponder": responderSig,
-                      "signPatient": patientSig,
-                      "signGuardian": guardianSig,
-
-                      "disposition": controller.finalDisposition,
-                    };
-
-                    final pdfBytes = await generateNewIncidentReportPdf(
-                      mapData,
-                    );
-                    final dir = await getApplicationDocumentsDirectory();
-                    final fileName =
-                        "incident_report_${DateTime.now().millisecondsSinceEpoch}.pdf";
-                    final file = File("${dir.path}/$fileName");
-                    await file.writeAsBytes(pdfBytes);
-                    final reportMeta = {
-                      "filePath": file.path,
-                      "createdAt": DateTime.now().toIso8601String(),
-                      "name": mapData["name"],
-                      "incidentDate": mapData["incidentDate"],
-                      "notes": mapData["notes"],
-                      "mapData": mapData,
-                    };
-
-                    await saveReportMetadata(reportMeta);
-                    EasyLoading.dismiss();
-                    await Printing.layoutPdf(
-                      name: fileName,
-                      onLayout: (format) async => pdfBytes,
-                    );
-                    controller.resetAllData();
-                    _responderKey.currentState?.clear();
-                    _patientKey.currentState?.clear();
-                    _guardianKey.currentState?.clear();
-                    Get.offAll(MainScreen());
+                    await _updateReport(controller, context);
                   },
                 ),
                 SizedBox(height: 10),
@@ -1361,64 +1186,434 @@ class MainScreen extends StatelessWidget {
     );
   }
 
-  Future<void> saveReportMetadata(Map<String, dynamic> reportMeta) async {
+  void _initializeControllerData(MainController controller) {
+    final mapData = widget.reportData["mapData"] as Map<String, dynamic>? ?? {};
+
+    // Parse and set name fields
+    String fullName = mapData["name"] ?? "";
+    List<String> nameParts = fullName.split(" ");
+    String firstName = nameParts.isNotEmpty ? nameParts.first : "";
+    String lastName = nameParts.length > 1
+        ? nameParts.sublist(1).join(" ")
+        : "";
+
+    // Initialize text controllers
+    controller.studentIDController?.text = mapData["studentId"] ?? "";
+    controller.firstNameController?.text = firstName;
+    controller.isCelsius.value = mapData['unit']!=null?mapData['unit'] == '°C' ? true : false:false;
+    controller.lastNameController?.text = lastName;
+    controller.dobController?.text = mapData["dob"] ?? "";
+    controller.occurredDateController?.text = mapData["incidentDate"] ?? "";
+    controller.siteController?.text = mapData["site"] ?? "";
+    controller.locationController?.text = mapData["location"] ?? "";
+    controller.activityController?.text = mapData["activity"] ?? "";
+    controller.chiefComplaintController?.text = mapData["chiefComplaint"] ?? "";
+    controller.mechanismController?.text = mapData["mechanism"] ?? "";
+    controller.notesController?.text = mapData["notes"] ?? "";
+
+    // Initialize dropdown selections
+    String gender = mapData["gender"] ?? "";
+    if (controller.subjectGender.contains(gender)) {
+      controller.selectedSubjectGender.value = gender;
+    }
+
+    String severity = mapData["severity"] ?? "";
+    if (controller.injurySeverity.contains(severity)) {
+      controller.selectedInjurySeverity.value = severity;
+    } else if (severity.isNotEmpty) {
+      controller.selectedInjurySeverity.value = "Other";
+      controller.otherSeverityText.value = severity;
+    }
+
+    String injuryType = mapData["injuryType"] ?? "";
+    if (controller.commonInjuryType.contains(injuryType)) {
+      controller.selectedCommonInjuryType.value = injuryType;
+    } else if (injuryType.isNotEmpty) {
+      controller.selectedCommonInjuryType.value = "Other";
+      controller.otherInjuryText.value = injuryType;
+    }
+
+    String illnessType = mapData["illnessType"] ?? "";
+    if (controller.commonIllnessType.contains(illnessType)) {
+      controller.selectedCommonIllnessType.value = illnessType;
+    } else if (illnessType.isNotEmpty) {
+      controller.selectedCommonIllnessType.value = "Other";
+      controller.otherIllnessText.value = illnessType;
+    }
+
+    String disposition = mapData["disposition"] ?? "";
+    if (controller.dispositionsList.contains(disposition)) {
+      controller.selectedDisposition.value = disposition;
+    } else if (disposition.isNotEmpty) {
+      controller.selectedDisposition.value = "Other";
+      controller.otherDispositionText.value = disposition;
+    }
+
+    // Initialize treatments
+    String treatments = mapData["treatments"] ?? "";
+    List<String> treatmentsList = treatments.split(", ").where((t) =>
+    t.isNotEmpty).toList();
+    controller.selectedImmediateTreatments.clear();
+
+    for (String treatment in treatmentsList) {
+      int index = controller.immediateTreatments.indexOf(treatment);
+      if (index != -1) {
+        controller.selectedImmediateTreatments.add(index);
+      } else {
+        // Handle "Other" treatments
+        int otherIndex = controller.immediateTreatments.indexOf("Other");
+        if (otherIndex != -1 &&
+            !controller.selectedImmediateTreatments.contains(otherIndex)) {
+          controller.selectedImmediateTreatments.add(otherIndex);
+          controller.otherTreatmentText.value = treatment;
+        }
+      }
+    }
+
+    // Initialize vitals
+    List<dynamic> vitals = mapData["vitals"] ?? [];
+    controller.vitalSets.clear();
+
+    if (vitals.isEmpty) {
+      controller.addVitalSet();
+    } else {
+      for (var vital in vitals) {
+        VitalSet vitalSet = VitalSet();
+        vitalSet.time.text = vital["time"] ?? "";
+        vitalSet.hr.text = vital["hr"] ?? "";
+        vitalSet.rr.text = vital["rr"] ?? "";
+        vitalSet.bpSys.text = vital["bp_systolic"] ?? "";
+        vitalSet.bpDia.text = vital["bp_diastolic"] ?? "";
+        vitalSet.spo2.text = vital["spo2"] ?? "";
+        vitalSet.temp.text = vital["temp_c"] ?? "";
+        vitalSet.bgl.text = vital["bgl_mgdl"] ?? "";
+        vitalSet.gcs.text = vital["gcs"] ?? "";
+        controller.vitalSets.add(vitalSet);
+      }
+    }
+
+    // Initialize body injuries
+    List<dynamic> bodyMap = mapData["bodyMap"] ?? [];
+    controller.bodyInjuryList.clear();
+
+    for (var injury in bodyMap) {
+      BodyInjury bodyInjury = BodyInjury(
+        id: DateTime
+            .now()
+            .millisecondsSinceEpoch
+            .toString(),
+        bodySide: injury["bodySide"] ?? "",
+        region: injury["region"] ?? "",
+        gender: injury["gender"] ?? "",
+        injuryType: injury["injuryType"] ?? "",
+        severity: injury["severity"] ?? "",
+        notes: injury["notes"] ?? "",
+        added: injury["added"] ?? "",
+      );
+      controller.bodyInjuryList.add(bodyInjury);
+    }
+
+    // Initialize photos
+    List<dynamic> photos = mapData["photos"] ?? [];
+    controller.pickedPhotos.clear();
+
+    for (var photo in photos) {
+      if (photo["file"] != null) {
+        try {
+          // Create temporary file from bytes
+          List<int> imageBytes = List<int>.from(photo["file"]);
+          String tempPath = "${Directory.systemTemp.path}/${DateTime
+              .now()
+              .millisecondsSinceEpoch}.jpg";
+          File tempFile = File(tempPath);
+          tempFile.writeAsBytesSync(imageBytes);
+
+          ImageModel imageModel = ImageModel(
+            file: tempFile,
+            pickedAt: DateTime.parse(photo["pickedAt"]),
+            caption: photo["caption"] ?? "",
+          );
+          controller.pickedPhotos.add(imageModel);
+        } catch (e) {
+          print("Error loading image: $e");
+        }
+      }
+    }
+
+    // Initialize body part selections based on body injuries
+    selectedFrontMaleBodyParts.clear();
+    selectedBackMaleBodyParts.clear();
+    selectedFrontFemaleBodyParts.clear();
+    selectedBackFemaleBodyParts.clear();
+
+    for (var injury in controller.bodyInjuryList) {
+      String region = injury.region ?? "";
+      String bodySide = injury.bodySide ?? "";
+      String gender = injury.gender ?? "";
+
+      if (gender.toLowerCase() == "male") {
+        if (bodySide.toLowerCase() == "front") {
+          selectedFrontMaleBodyParts.add(region);
+        } else {
+          selectedBackMaleBodyParts.add(region);
+        }
+      } else {
+        if (bodySide.toLowerCase() == "front") {
+          selectedFrontFemaleBodyParts.add(region);
+        } else {
+          selectedBackFemaleBodyParts.add(region);
+        }
+      }
+    }
+  }
+
+  Future<void> _updateReport(MainController controller,
+      BuildContext context) async {
+    EasyLoading.show();
+
+    // try {
+    //
+    // } catch (e) {
+    //   EasyLoading.dismiss();
+    //   Get.snackbar('Error', 'Failed to update report: $e');
+    //   print("Error updating report: $e");
+    // }
+    // final responderSig = await BaseHelper().getSignatureBytes(_responderKey);
+    // final patientSig = await BaseHelper().getSignatureBytes(_patientKey);
+    // final guardianSig = await BaseHelper().getSignatureBytes(_guardianKey);
+
+    // Prepare vitals data
+    final vitalsList = controller.vitalSets.map((v) => v.toMap()).toList();
+
+    // Prepare body map descriptions
+    final bodyMapDescriptions = controller.bodyInjuryList.map((injury) {
+      return {
+        "bodySide": injury.bodySide ?? '',
+        "region": injury.region ?? '',
+        "gender": injury.gender ?? '',
+        "injuryType": injury.injuryType ?? '',
+        "severity": injury.severity ?? '',
+        "notes": injury.notes ?? '',
+      };
+    }).toList();
+
+    // Prepare photos data
+    final photosList = await Future.wait(
+      controller.pickedPhotos.map(
+            (img) async =>
+        {
+          "pickedAt": img.pickedAt.toIso8601String(),
+          "file": await img.file.readAsBytes(),
+          "caption": img.caption ?? "",
+        },
+      ),
+    );
+
+    // Get logo bytes
+    Uint8List? logoBytes;
+    if (controller.logoImage.value != null &&
+        await controller.logoImage.value!.exists()) {
+      try {
+        logoBytes = await controller.logoImage.value!.readAsBytes();
+      } catch (e) {
+        logoBytes = null;
+      }
+    }
+
+    // Prepare treatments list
+    List<String> treatmentsStrList = [];
+    for (int i = 0; i < controller.selectedImmediateTreatments.length; i++) {
+      String treatment = controller.immediateTreatments.toList()[controller
+          .selectedImmediateTreatments[i]];
+      if (treatment == "Other" &&
+          controller.otherTreatmentText.value.isNotEmpty) {
+        treatmentsStrList.add(controller.otherTreatmentText.value);
+      } else {
+        treatmentsStrList.add(treatment);
+      }
+    }
+
+    // Prepare body widget descriptions
+    final List<Map<String, dynamic>> bodyWidgetDescriptions = [];
+
+    if (selectedFrontMaleBodyParts.isNotEmpty) {
+      final imageBytes = await BodyWidgetPdfHelper.captureWidgetAsImage(
+          _frontMaleBodyKey);
+      if (imageBytes != null) {
+        bodyWidgetDescriptions.add({
+          'type': 'front_male',
+          'title': 'Male Front View - Selected Injuries',
+          'selectedParts': selectedFrontMaleBodyParts.toList(),
+          'imageBytes': imageBytes,
+        });
+      }
+    }
+
+    if (selectedBackMaleBodyParts.isNotEmpty) {
+      final imageBytes = await BodyWidgetPdfHelper.captureWidgetAsImage(
+          _backMaleBodyKey);
+      if (imageBytes != null) {
+        bodyWidgetDescriptions.add({
+          'type': 'back_male',
+          'title': 'Male Back View - Selected Injuries',
+          'selectedParts': selectedBackMaleBodyParts.toList(),
+          'imageBytes': imageBytes,
+        });
+      }
+    }
+
+    if (selectedFrontFemaleBodyParts.isNotEmpty) {
+      final imageBytes = await BodyWidgetPdfHelper.captureWidgetAsImage(
+          _frontFemaleBodyKey);
+      if (imageBytes != null) {
+        bodyWidgetDescriptions.add({
+          'type': 'front_female',
+          'title': 'Female Front View - Selected Injuries',
+          'selectedParts': selectedFrontFemaleBodyParts.toList(),
+          'imageBytes': imageBytes,
+        });
+      }
+    }
+
+    if (selectedBackFemaleBodyParts.isNotEmpty) {
+      final imageBytes = await BodyWidgetPdfHelper.captureWidgetAsImage(
+          _backFemaleBodyKey);
+      if (imageBytes != null) {
+        bodyWidgetDescriptions.add({
+          'type': 'back_female',
+          'title': 'Female Back View - Selected Injuries',
+          'selectedParts': selectedBackFemaleBodyParts.toList(),
+          'imageBytes': imageBytes,
+        });
+      }
+    }
+
+    final Map<String, dynamic> updatedMapData = {
+      "logoImage": logoBytes,
+      "incidentDate": controller.occurredDateController?.text ?? "",
+      "name": "${controller.firstNameController?.text ?? ""} ${controller
+          .lastNameController?.text ?? ""}".trim(),
+      "studentId": controller.studentIDController?.text ?? "",
+      "gender": controller.selectedSubjectGender.value,
+      "dob": controller.dobController?.text ?? "",
+      "unit": controller.isCelsius.value == true ? '°C':'°F',
+      "site": controller.siteController?.text ?? "",
+      "location": controller.locationController?.text ?? "",
+      "activity": controller.activityController?.text ?? "",
+      "severity": controller.finalSeverity,
+      "mechanism": controller.mechanismController?.text ?? "",
+      "injuryType": controller.finalInjuryType,
+      "illnessType": controller.finalIllnessType,
+      "bodyWidgetImages": bodyWidgetDescriptions,
+      "chiefComplaint": controller.chiefComplaintController?.text ?? "",
+      "notes": controller.notesController?.text ?? "",
+      "treatments": treatmentsStrList.join(', '),
+      "vitals": vitalsList,
+      "bodyMap": bodyMapDescriptions,
+      "photos": photosList,
+      // "signResponder": responderSig,
+      // "signPatient": patientSig,
+      // "signGuardian": guardianSig,
+      "disposition": controller.finalDisposition,
+    };
+
+    // Generate updated PDF
+    final pdfBytes = await generateNewIncidentReportPdf(updatedMapData);
+
+    // Update the existing file or create new one
+    File pdfFile;
+    if (widget.reportData["filePath"] != null &&
+        File(widget.reportData["filePath"]).existsSync()) {
+      pdfFile = File(widget.reportData["filePath"]);
+    } else {
+      final dir = await getApplicationDocumentsDirectory();
+      final fileName = "incident_report_${DateTime
+          .now()
+          .millisecondsSinceEpoch}.pdf";
+      pdfFile = File("${dir.path}/$fileName");
+    }
+
+    await pdfFile.writeAsBytes(pdfBytes);
+
+    // Update report metadata
+    final updatedReportMeta = {
+      "filePath": pdfFile.path,
+      "createdAt": widget.reportData["createdAt"] ??
+          DateTime.now().toIso8601String(),
+      "updatedAt": DateTime.now().toIso8601String(),
+      "name": updatedMapData["name"],
+      "incidentDate": updatedMapData["incidentDate"],
+      "notes": updatedMapData["notes"],
+      "mapData": updatedMapData,
+    };
+
+    await _updateReportInStorage(updatedReportMeta, widget.reportIndex);
+
+    EasyLoading.dismiss();
+
+    // Show PDF preview
+    await Printing.layoutPdf(
+      name: "updated_incident_report.pdf",
+      onLayout: (format) async => pdfBytes,
+    );
+
+    // Navigate back
+    Get.snackbar('Success', 'Report updated successfully');
+    Get.back();
+  }
+
+  Future<void> _updateReportInStorage(Map<String, dynamic> updatedReportMeta,
+      int index) async {
     final prefs = await SharedPreferences.getInstance();
     final reportsJson = prefs.getStringList("reports") ?? [];
-    reportsJson.add(jsonEncode(reportMeta));
 
-    await prefs.setStringList("reports", reportsJson);
+    if (index >= 0 && index < reportsJson.length) {
+      reportsJson[index] = jsonEncode(updatedReportMeta);
+      await prefs.setStringList("reports", reportsJson);
+    }
   }
 
-  _buildSignatureWidget(GlobalKey<SfSignaturePadState>? key, String label) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CustomBoldText(title: label, fontSize: 13, fontWeight: FontWeight.w400),
-        SizedBox(height: 3),
-        Container(
-          height: 170,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.darkGray, width: 1),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Stack(
-              children: [
-                SfSignaturePad(
-                  key: key,
-                  backgroundColor: AppColors.lightestGray,
-                ),
-                Positioned(
-                  bottom: 10,
-                  right: 10,
-                  child: PlainButton(
-                    outLined: true,
-                    fontSize: 12,
-                    backgroundColor: AppColors.lightGray,
-                    horizontalPadding: 7,
-                    height: 28,
-                    text: 'Clear',
-                    onTap: () {
-                      key?.currentState!.clear();
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  String generateSiteId(String site) {
-    final now = DateTime.now();
-    final year = now.year;
-    final random = Random();
-    final number = random.nextInt(100000);
-    final paddedNumber = number.toString().padLeft(5, '0');
-
-    return '$site-$year-$paddedNumber';
-  }
+  // Widget _buildSignatureWidget(GlobalKey<SfSignaturePadState>? key,
+  //     String label) {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       CustomBoldText(title: label, fontSize: 13, fontWeight: FontWeight.w400),
+  //       SizedBox(height: 3),
+  //       Container(
+  //         height: 170,
+  //         decoration: BoxDecoration(
+  //           borderRadius: BorderRadius.circular(8),
+  //           border: Border.all(color: AppColors.darkGray, width: 1),
+  //         ),
+  //         child: ClipRRect(
+  //           borderRadius: BorderRadius.circular(8),
+  //           child: Stack(
+  //             children: [
+  //               SfSignaturePad(
+  //                 key: key,
+  //                 backgroundColor: AppColors.lightestGray,
+  //               ),
+  //               Positioned(
+  //                 bottom: 10,
+  //                 right: 10,
+  //                 child: PlainButton(
+  //                   outLined: true,
+  //                   fontSize: 12,
+  //                   backgroundColor: AppColors.lightGray,
+  //                   horizontalPadding: 7,
+  //                   height: 28,
+  //                   text: 'Clear',
+  //                   onTap: () {
+  //                     key?.currentState!.clear();
+  //                   },
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 }

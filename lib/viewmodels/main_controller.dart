@@ -22,6 +22,11 @@ class MainController extends GetxController {
   RxBool isMale = true.obs;
   RxBool guardianNotify = false.obs;
   RxBool adminNotify = false.obs;
+  var isCelsius = false.obs;
+
+  void toggleUnit() {
+    isCelsius.value = !isCelsius.value;
+  }
 
   var pickedPhotos = <ImageModel>[].obs;
   final ImagePicker _picker = ImagePicker();

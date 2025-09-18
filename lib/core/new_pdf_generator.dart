@@ -37,6 +37,14 @@ Future<Uint8List> generateNewIncidentReportPdf(Map<String, dynamic> data) async 
                       fontWeight: pw.FontWeight.bold,
                     ),
                   ),
+                  if (_isNotEmpty(data['incident_id']))
+                    pw.Text(
+                      data['incident_id'],
+                      style: pw.TextStyle(
+                        fontSize: 14,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
                   pw.SizedBox(height: 4),
                   if (_isNotEmpty(data['incidentDate']))
                     pw.Text("Incident occurred: ${data['incidentDate']}"),
@@ -96,7 +104,7 @@ Future<Uint8List> generateNewIncidentReportPdf(Map<String, dynamic> data) async 
             if (_hasVitalsData(data))
               pw.Expanded(
                 child: _infoBox("Vitals", [
-                  pw.Text(_formatVitals(data['vitals'])),
+                  pw.Text(_formatVitals(data['vitals'], unit: data['unit'])),
                 ]),
               ),
           ],
@@ -435,7 +443,7 @@ List<pw.Widget> _buildIncidentContent(Map<String, dynamic> data) {
 //   if (vitals is List && vitals.isEmpty) return '';
 //   return vitals.toString();
 // }
-String _formatVitals(dynamic vitals) {
+String _formatVitals(dynamic vitals, {String? unit}) {
   if (vitals == null) return '';
   if (vitals is List && vitals.isEmpty) return '';
 
@@ -465,7 +473,7 @@ String _formatVitals(dynamic vitals) {
           measurements.add("BP Dia: ${vital['bp_diastolic']}");
         }
         if (_isNotEmpty(vital['spo2'])) measurements.add("SpO2: ${vital['spo2']}%");
-        if (_isNotEmpty(vital['temp_c'])) measurements.add("Temp: ${vital['temp_c']}°C");
+        if (_isNotEmpty(vital['temp_c'])) measurements.add("Temp: ${vital['temp_c']}${unit??'°F'}");
         if (_isNotEmpty(vital['bgl_mgdl'])) measurements.add("BGL: ${vital['bgl_mgdl']} mg/dL");
 
         if (measurements.isNotEmpty) {

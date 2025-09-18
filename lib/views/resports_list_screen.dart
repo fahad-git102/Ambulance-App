@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/app_colors.dart';
 import '../core/app_contants.dart';
+import 'edit_past_report_screen.dart';
 
 class ReportsListScreen extends StatefulWidget {
   const ReportsListScreen({super.key});
@@ -208,12 +209,20 @@ class _ReportsListState extends State<ReportsListScreen> {
                         icon: const Icon(Icons.delete_outline),
                       ),
                       onTap: () async {
-                        final file = File(report["filePath"]);
-                        if (await file.exists()) {
-                          await OpenFile.open(file.path);
-                        } else {
-                          Get.snackbar('Error', "File not found");
-                        }
+                        // final file = File(report["filePath"]);
+                        // if (await file.exists()) {
+                        //   await OpenFile.open(file.path);
+                        // } else {
+                        //   Get.snackbar('Error', "File not found");
+                        // }
+                        print(report);
+                        print(report['photos']);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (context) => EditPastReportScreen(reportData: report, reportIndex: index),
+                          ),
+                        );
                       },
                     ),
                   );
