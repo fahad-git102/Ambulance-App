@@ -19,6 +19,7 @@ import 'package:ambulance_app/core/app_contants.dart';
 import 'package:ambulance_app/core/base_helper.dart';
 import 'package:ambulance_app/core/new_pdf_generator.dart';
 import 'package:ambulance_app/viewmodels/main_controller.dart';
+import 'package:ambulance_app/views/pin_update_screen.dart';
 import 'package:ambulance_app/views/resports_list_screen.dart';
 import 'package:ambulance_app/views/settings_screen.dart';
 import 'package:flutter/material.dart';
@@ -85,6 +86,13 @@ class MainScreen extends StatelessWidget {
                     builder: (context) => ReportsListScreen(),
                   ),
                 );
+              } else if (value == 'pin') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (context) => PinUpdateScreen(),
+                  ),
+                );
               } else if (value == 'settings') {
                 Navigator.push(
                   context,
@@ -97,6 +105,7 @@ class MainScreen extends StatelessWidget {
             itemBuilder: (context) => [
               PopupMenuItem(value: 'report', child: Text('Report Form')),
               PopupMenuItem(value: 'past', child: Text('Past Reports')),
+              PopupMenuItem(value: 'pin', child: Text('Update Pin')),
               PopupMenuItem(value: 'settings', child: Text('Settings')),
             ],
           ),
@@ -861,96 +870,165 @@ class MainScreen extends StatelessWidget {
                       ),
                       SizedBox(height: 15),
                       Obx(() {
-                        return controller.isMale.value == true
-                            ? controller.isFront.value == true
-                                  ? RepaintBoundary(
-                                      key: _frontMaleBodyKey,
-                                      child: FrontBodyMale(
-                                        selectedBodyParts:
-                                            selectedFrontMaleBodyParts,
-                                        onBodyPartSelected: (part) {
-                                          Get.dialog(
-                                            BodyMapDialog(
-                                              gender: 'Male',
-                                              title:
-                                                  "Add Injury — Front · $part",
-                                              bodySide: 'Front',
-                                              region: part,
-                                            ),
-                                          );
+                        // Compute selected parts from injury list
+                        final selectedFrontMale = controller.bodyInjuryList
+                            .where((i) => i.gender == 'Male' && i.bodySide == 'Front')
+                            .map((i) => i.region ?? '')
+                            .toSet();
+
+                        if (controller.tempSelectedPart.value != null) {
+                          selectedFrontMale.add(controller.tempSelectedPart.value!);
+                        }
+
+                        final selectedBackMale = controller.bodyInjuryList
+                            .where((i) => i.gender == 'Male' && i.bodySide == 'Back')
+                            .map((i) => i.region ?? '')
+                            .toSet();
+
+                        if (controller.tempSelectedPart.value != null) {
+                          selectedBackMale.add(controller.tempSelectedPart.value!);
+                        }
+
+                        final selectedFrontFemale = controller.bodyInjuryList
+                            .where((i) => i.gender == 'Female' && i.bodySide == 'Front')
+                            .map((i) => i.region ?? '')
+                            .toSet();
+
+                        if (controller.tempSelectedPart.value != null) {
+                          selectedFrontFemale.add(controller.tempSelectedPart.value!);
+                        }
+
+                        final selectedBackFemale = controller.bodyInjuryList
+                            .where((i) => i.gender == 'Female' && i.bodySide == 'Back')
+                            .map((i) => i.region ?? '')
+                            .toSet();
+
+                        if (controller.tempSelectedPart.value != null) {
+                          selectedBackFemale.add(controller.tempSelectedPart.value!);
+                        }
+
+                        return Stack(
+                          children: [
+                            Offstage(
+                              offstage: !(controller.isMale.value == true && controller.isFront.value == true),
+                              child: RepaintBoundary(
+                                key: _frontMaleBodyKey,
+                                child: FrontBodyMale(
+                                  selectedBodyParts: selectedFrontMale,
+                                  onBodyPartSelected: (part) {
+                                    controller.tempSelectedPart.value = part;
+                                    Get.dialog(
+                                      BodyMapDialog(
+                                        gender: 'Male',
+                                        title: "Add Injury — Front · $part",
+                                        bodySide: 'Front',
+                                        region: part,
+                                        onCancel: () {
+                                          controller.clearTempSelection();
                                         },
-                                        onSelectedPartsChanged:
-                                            (selectedParts) {
-                                              selectedFrontMaleBodyParts =
-                                                  selectedParts;
-                                            },
                                       ),
-                                    )
-                                  : RepaintBoundary(
-                                      key: _backMaleBodyKey,
-                                      child: BackBodyMale(
-                                        selectedBodyParts:
-                                            selectedBackMaleBodyParts,
-                                        onBodyPartSelected: (part) {
-                                          Get.dialog(
-                                            BodyMapDialog(
-                                              gender: 'Male',
-                                              title:
-                                                  "Add Injury — Back · $part",
-                                              bodySide: 'Back',
-                                              region: part,
-                                            ),
-                                          );
+                                    ).then((_) {
+                                      controller.clearTempSelection();
+                                    });
+                                  },
+                                  onSelectedPartsChanged: (selectedParts) {
+                                    selectedFrontMaleBodyParts = selectedParts;
+                                  },
+                                ),
+                              ),
+                            ),
+
+                            // Back Male
+                            Offstage(
+                              offstage: !(controller.isMale.value == true && controller.isFront.value == false),
+                              child: RepaintBoundary(
+                                key: _backMaleBodyKey,
+                                child: BackBodyMale(
+                                  selectedBodyParts: selectedBackMale,
+                                  onBodyPartSelected: (part) {
+                                    controller.tempSelectedPart.value = part;
+                                    Get.dialog(
+                                      BodyMapDialog(
+                                        gender: 'Male',
+                                        title: "Add Injury — Back · $part",
+                                        bodySide: 'Back',
+                                        region: part,
+                                        onCancel: () {
+                                          controller.clearTempSelection();
                                         },
-                                        onSelectedPartsChanged:
-                                            (selectedParts) {
-                                              selectedBackMaleBodyParts =
-                                                  selectedParts;
-                                            },
                                       ),
-                                    )
-                            : controller.isFront.value == true
-                            ? RepaintBoundary(
+                                    ).then((_) {
+                                      controller.clearTempSelection();
+                                    });
+                                  },
+                                  onSelectedPartsChanged: (selectedParts) {
+                                    selectedBackMaleBodyParts = selectedParts;
+                                  },
+                                ),
+                              ),
+                            ),
+
+                            // Front Female
+                            Offstage(
+                              offstage: !(controller.isMale.value == false && controller.isFront.value == true),
+                              child: RepaintBoundary(
                                 key: _frontFemaleBodyKey,
                                 child: FrontBodyFemale(
-                                  selectedBodyParts:
-                                      selectedFrontFemaleBodyParts,
+                                  selectedBodyParts: selectedFrontFemale,
                                   onBodyPartSelected: (part) {
+                                    controller.tempSelectedPart.value = part;
                                     Get.dialog(
                                       BodyMapDialog(
                                         gender: 'Female',
                                         title: "Add Injury — Front · $part",
                                         bodySide: 'Front',
                                         region: part,
+                                        onCancel: () {
+                                          controller.clearTempSelection();
+                                        },
                                       ),
-                                    );
+                                    ).then((_) {
+                                      controller.clearTempSelection();
+                                    });
                                   },
                                   onSelectedPartsChanged: (selectedParts) {
-                                    selectedFrontFemaleBodyParts =
-                                        selectedParts;
+                                    selectedFrontFemaleBodyParts = selectedParts;
                                   },
                                 ),
-                              )
-                            : RepaintBoundary(
+                              ),
+                            ),
+
+                            // Back Female
+                            Offstage(
+                              offstage: !(controller.isMale.value == false && controller.isFront.value == false),
+                              child: RepaintBoundary(
                                 key: _backFemaleBodyKey,
                                 child: BackBodyFemale(
-                                  selectedBodyParts:
-                                      selectedBackFemaleBodyParts,
+                                  selectedBodyParts: selectedBackFemale,
                                   onBodyPartSelected: (part) {
+                                    controller.tempSelectedPart.value = part;
                                     Get.dialog(
                                       BodyMapDialog(
                                         gender: 'Female',
                                         title: "Add Injury — Back · $part",
                                         bodySide: 'Back',
                                         region: part,
+                                        onCancel: () {
+                                          controller.clearTempSelection();
+                                        },
                                       ),
-                                    );
+                                    ).then((_) {
+                                      controller.clearTempSelection();
+                                    });
                                   },
                                   onSelectedPartsChanged: (selectedParts) {
                                     selectedBackFemaleBodyParts = selectedParts;
                                   },
                                 ),
-                              );
+                              ),
+                            ),
+                          ],
+                        );
                       }),
                       SizedBox(height: 20),
                       Obx(() {
@@ -988,6 +1066,7 @@ class MainScreen extends StatelessWidget {
                                         controller.removeBodyInjuries(
                                           controller.bodyInjuryList[index].id,
                                         );
+
                                       },
                                       onDuplicateTap: () {
                                         controller.addBodyInjuries(
@@ -1154,6 +1233,8 @@ class MainScreen extends StatelessWidget {
                   text: 'Export PDF',
                   onTap: () async {
                     EasyLoading.show();
+                    final originalIsMale = controller.isMale.value;
+                    final originalIsFront = controller.isFront.value;
                     final responderSig = await BaseHelper().getSignatureBytes(
                       _responderKey,
                     );
@@ -1166,7 +1247,6 @@ class MainScreen extends StatelessWidget {
                     final vitalsList = controller.vitalSets
                         .map((v) => v.toMap())
                         .toList();
-                    print(vitalsList);
                     final bodyMapDescriptions = controller.bodyInjuryList.map((
                       injury,
                     ) {
@@ -1222,70 +1302,104 @@ class MainScreen extends StatelessWidget {
                     final List<Map<String, dynamic>> bodyWidgetDescriptions =
                         [];
 
-                    if (selectedFrontMaleBodyParts.isNotEmpty) {
-                      final imageBytes =
-                          await BodyWidgetPdfHelper.captureWidgetAsImage(
-                            _frontMaleBodyKey,
-                          );
+                    final selectedFrontMale = controller.bodyInjuryList
+                        .where((i) => i.gender == 'Male' && i.bodySide == 'Front')
+                        .map((i) => i.region ?? '')
+                        .toSet();
+
+                    final selectedBackMale = controller.bodyInjuryList
+                        .where((i) => i.gender == 'Male' && i.bodySide == 'Back')
+                        .map((i) => i.region ?? '')
+                        .toSet();
+
+                    final selectedFrontFemale = controller.bodyInjuryList
+                        .where((i) => i.gender == 'Female' && i.bodySide == 'Front')
+                        .map((i) => i.region ?? '')
+                        .toSet();
+
+                    final selectedBackFemale = controller.bodyInjuryList
+                        .where((i) => i.gender == 'Female' && i.bodySide == 'Back')
+                        .map((i) => i.region ?? '')
+                        .toSet();
+
+                    if (selectedFrontMale.isNotEmpty) {
+                      controller.toggleIsMale(true);
+                      controller.toggleIsFront(true);
+                      await Future.delayed(Duration(milliseconds: 500)); // Wait for render
+                      final imageBytes = await BodyWidgetPdfHelper.captureWidgetAsImage(
+                        _frontMaleBodyKey,
+                      );
                       if (imageBytes != null) {
                         bodyWidgetDescriptions.add({
                           'type': 'front_male',
                           'title': 'Male Front View - Selected Injuries',
-                          'selectedParts': selectedFrontMaleBodyParts.toList(),
+                          'selectedParts': selectedFrontMale.toList(),
                           'imageBytes': imageBytes,
                         });
                       }
                     }
 
-                    if (selectedBackMaleBodyParts.isNotEmpty) {
-                      final imageBytes =
-                          await BodyWidgetPdfHelper.captureWidgetAsImage(
-                            _backMaleBodyKey,
-                          );
+                    // Capture Back Male
+                    if (selectedBackMale.isNotEmpty) {
+                      controller.toggleIsMale(true);
+                      controller.toggleIsFront(false);
+                      await Future.delayed(Duration(milliseconds: 500)); // Wait for render
+                      final imageBytes = await BodyWidgetPdfHelper.captureWidgetAsImage(
+                        _backMaleBodyKey,
+                      );
                       if (imageBytes != null) {
                         bodyWidgetDescriptions.add({
                           'type': 'back_male',
                           'title': 'Male Back View - Selected Injuries',
-                          'selectedParts': selectedBackMaleBodyParts.toList(),
+                          'selectedParts': selectedBackMale.toList(),
                           'imageBytes': imageBytes,
                         });
                       }
                     }
 
-                    if (selectedFrontFemaleBodyParts.isNotEmpty) {
-                      final imageBytes =
-                          await BodyWidgetPdfHelper.captureWidgetAsImage(
-                            _frontFemaleBodyKey,
-                          );
+                    // Capture Front Female
+                    if (selectedFrontFemale.isNotEmpty) {
+                      controller.toggleIsMale(false);
+                      controller.toggleIsFront(true);
+                      await Future.delayed(Duration(milliseconds: 500)); // Wait for render
+                      final imageBytes = await BodyWidgetPdfHelper.captureWidgetAsImage(
+                        _frontFemaleBodyKey,
+                      );
                       if (imageBytes != null) {
                         bodyWidgetDescriptions.add({
                           'type': 'front_female',
                           'title': 'Female Front View - Selected Injuries',
-                          'selectedParts': selectedFrontFemaleBodyParts
-                              .toList(),
+                          'selectedParts': selectedFrontFemale.toList(),
                           'imageBytes': imageBytes,
                         });
                       }
                     }
 
-                    if (selectedBackFemaleBodyParts.isNotEmpty) {
-                      final imageBytes =
-                          await BodyWidgetPdfHelper.captureWidgetAsImage(
-                            _backFemaleBodyKey,
-                          );
+                    // Capture Back Female
+                    if (selectedBackFemale.isNotEmpty) {
+                      controller.toggleIsMale(false);
+                      controller.toggleIsFront(false);
+                      await Future.delayed(Duration(milliseconds: 500)); // Wait for render
+                      final imageBytes = await BodyWidgetPdfHelper.captureWidgetAsImage(
+                        _backFemaleBodyKey,
+                      );
                       if (imageBytes != null) {
                         bodyWidgetDescriptions.add({
                           'type': 'back_female',
                           'title': 'Female Back View - Selected Injuries',
-                          'selectedParts': selectedBackFemaleBodyParts.toList(),
+                          'selectedParts': selectedBackFemale.toList(),
                           'imageBytes': imageBytes,
                         });
                       }
                     }
 
+                    // Restore original view
+                    controller.toggleIsMale(originalIsMale);
+                    controller.toggleIsFront(originalIsFront);
+
                     final Map<String, dynamic> mapData = {
                       "logoImage": logoBytes,
-                      "incident_id": generateSiteId(controller.siteController?.text??'site'),
+                      "incident_id": await generateSiteId(controller.siteController?.text??'site'),
                       "incidentDate": controller.occurredDateController?.text,
                       "name":
                           "${controller.firstNameController?.text} ${controller.lastNameController?.text}",
@@ -1412,13 +1526,15 @@ class MainScreen extends StatelessWidget {
     );
   }
 
-  String generateSiteId(String site) {
+  Future<String> generateSiteId(String site) async {
+    final prefs = await SharedPreferences.getInstance();
     final now = DateTime.now();
     final year = now.year;
-    final random = Random();
-    final number = random.nextInt(100000);
-    final paddedNumber = number.toString().padLeft(5, '0');
-
+    final counterKey = 'site_counter_${site}_$year';
+    int counter = prefs.getInt(counterKey) ?? 0;
+    counter++;
+    await prefs.setInt(counterKey, counter);
+    final paddedNumber = counter.toString().padLeft(6, '0');
     return '$site-$year-$paddedNumber';
   }
 }

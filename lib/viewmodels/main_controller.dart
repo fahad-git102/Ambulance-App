@@ -111,6 +111,11 @@ class MainController extends GetxController {
   final RxString otherTreatmentText = ''.obs;
 
   Rx<File?> logoImage = Rx<File?>(null);
+  var tempSelectedPart = Rx<String?>(null);
+
+  void clearTempSelection() {
+    tempSelectedPart.value = null;
+  }
 
   Future<void> saveLogoImage(File imageFile) async {
     logoImage.value = imageFile;

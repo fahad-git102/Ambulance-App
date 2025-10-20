@@ -12,8 +12,9 @@ import '../dropdowns/custom_dropdown.dart';
 
 class BodyMapDialog extends StatefulWidget {
   final String? title, bodySide, injuryId, region, gender;
+  final VoidCallback? onCancel;
 
-  const BodyMapDialog({super.key, this.title, this.bodySide, this.injuryId, this.region, this.gender});
+  const BodyMapDialog({super.key, this.title, this.bodySide, this.injuryId, this.region, this.gender, this.onCancel});
 
   @override
   State<StatefulWidget> createState() => _BodyMapState();
@@ -32,6 +33,13 @@ class _BodyMapState extends State<BodyMapDialog> {
     selectedInjurySeverity = 'Minor';
     controller = Get.find<MainController>();
     super.initState();
+  }
+
+  void _handleCancel() {
+    if (widget.onCancel != null) {
+      widget.onCancel!();
+    }
+    Get.back();
   }
 
   @override
@@ -59,7 +67,7 @@ class _BodyMapState extends State<BodyMapDialog> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
-                    onPressed: () => Get.back(),
+                    onPressed: _handleCancel,
                   ),
                 ],
               ),
@@ -97,9 +105,7 @@ class _BodyMapState extends State<BodyMapDialog> {
                     height: 40,
                     backgroundColor: AppColors.lightGray,
                     text: 'Cancel',
-                    onTap: () {
-                      Get.back();
-                    },
+                    onTap: _handleCancel,
                   ),
                   SizedBox(width: 7),
                   PlainButton(
