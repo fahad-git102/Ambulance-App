@@ -64,8 +64,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               SizedBox(height: 4),
               Obx(() {
                 // Add debug print
-                print("Building logo widget. Logo image: ${controller.logoImage.value}");
-
                 return controller.logoImage.value != null
                     ? Container(
                   height: 120,

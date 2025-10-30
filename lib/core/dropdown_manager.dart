@@ -1,3 +1,4 @@
+import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DropdownManager {
@@ -28,12 +29,17 @@ class DropdownManager {
     }
   }
   static Future<void> removeValue(String key, String valueToRemove) async {
-    final prefs = await SharedPreferences.getInstance();
+    if(valueToRemove=='Other'){
+      Get.snackbar('Denied', 'You can\'t delete Other fields');
+    }else{
+      final prefs = await SharedPreferences.getInstance();
 
-    List<String> values = prefs.getStringList(key) ?? [];
-    values.remove(valueToRemove);
+      List<String> values = prefs.getStringList(key) ?? [];
+      values.remove(valueToRemove);
 
-    await prefs.setStringList(key, values);
+      await prefs.setStringList(key, values);
+    }
+
   }
 
 }

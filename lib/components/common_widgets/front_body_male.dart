@@ -113,6 +113,7 @@ class _FrontBodyMaleState extends State<FrontBodyMale> {
   }
 
   // Define body part positions as percentages of the container
+
   static const Map<MaleFrontBodyParts, BodyPartPosition> _bodyPartPositions = {
     MaleFrontBodyParts.head: BodyPartPosition(
       topPercent: 0.03,
@@ -132,91 +133,103 @@ class _FrontBodyMaleState extends State<FrontBodyMale> {
       widthPercent: 0.32,
       heightPercent: 0.26,
     ),
-    MaleFrontBodyParts.leftUpperArm: BodyPartPosition(
+
+    // ✅ Swapped arms
+    MaleFrontBodyParts.rightUpperArm: BodyPartPosition(
       topPercent: 0.22,
       leftPercent: 0.22,
       widthPercent: 0.08,
       heightPercent: 0.14,
     ),
-    MaleFrontBodyParts.leftForeArm: BodyPartPosition(
+    MaleFrontBodyParts.rightForeArm: BodyPartPosition(
       topPercent: 0.34,
       leftPercent: 0.13,
       widthPercent: 0.08,
       heightPercent: 0.14,
     ),
-    MaleFrontBodyParts.leftHand: BodyPartPosition(
+    MaleFrontBodyParts.rightHand: BodyPartPosition(
       topPercent: 0.48,
       leftPercent: 0.04,
       widthPercent: 0.08,
       heightPercent: 0.06,
     ),
-    MaleFrontBodyParts.rightUpperArm: BodyPartPosition(
+
+    MaleFrontBodyParts.leftUpperArm: BodyPartPosition(
       topPercent: 0.22,
       leftPercent: 0.64,
       widthPercent: 0.08,
       heightPercent: 0.14,
     ),
-    MaleFrontBodyParts.rightForeArm: BodyPartPosition(
+    MaleFrontBodyParts.leftForeArm: BodyPartPosition(
       topPercent: 0.34,
       leftPercent: 0.73,
       widthPercent: 0.08,
       heightPercent: 0.14,
     ),
-    MaleFrontBodyParts.rightHand: BodyPartPosition(
+    MaleFrontBodyParts.leftHand: BodyPartPosition(
       topPercent: 0.48,
       leftPercent: 0.81,
       widthPercent: 0.08,
       heightPercent: 0.06,
     ),
-    MaleFrontBodyParts.leftThigh: BodyPartPosition(
+
+    // ✅ Swapped thighs
+    MaleFrontBodyParts.rightThigh: BodyPartPosition(
       topPercent: 0.54,
       leftPercent: 0.34,
       widthPercent: 0.1,
       heightPercent: 0.14,
     ),
-    MaleFrontBodyParts.rightThigh: BodyPartPosition(
+    MaleFrontBodyParts.leftThigh: BodyPartPosition(
       topPercent: 0.54,
       leftPercent: 0.5,
       widthPercent: 0.1,
       heightPercent: 0.14,
     ),
-    MaleFrontBodyParts.leftKnee: BodyPartPosition(
+
+    // ✅ Swapped knees
+    MaleFrontBodyParts.rightKnee: BodyPartPosition(
       topPercent: 0.69,
       leftPercent: 0.36,
       widthPercent: 0.08,
       heightPercent: 0.05,
     ),
-    MaleFrontBodyParts.rightKnee: BodyPartPosition(
+    MaleFrontBodyParts.leftKnee: BodyPartPosition(
       topPercent: 0.69,
       leftPercent: 0.5,
       widthPercent: 0.08,
       heightPercent: 0.05,
     ),
-    MaleFrontBodyParts.leftShin: BodyPartPosition(
+
+    // ✅ Swapped shins
+    MaleFrontBodyParts.rightShin: BodyPartPosition(
       topPercent: 0.75,
       leftPercent: 0.37,
       widthPercent: 0.06,
       heightPercent: 0.14,
     ),
-    MaleFrontBodyParts.rightShin: BodyPartPosition(
+    MaleFrontBodyParts.leftShin: BodyPartPosition(
       topPercent: 0.75,
       leftPercent: 0.5,
       widthPercent: 0.06,
       heightPercent: 0.14,
     ),
-    MaleFrontBodyParts.leftFoot: BodyPartPosition(
+
+    // ✅ Swapped feet
+    MaleFrontBodyParts.rightFoot: BodyPartPosition(
       topPercent: 0.91,
       leftPercent: 0.355,
       widthPercent: 0.08,
       heightPercent: 0.05,
     ),
-    MaleFrontBodyParts.rightFoot: BodyPartPosition(
+    MaleFrontBodyParts.leftFoot: BodyPartPosition(
       topPercent: 0.91,
       leftPercent: 0.48,
       widthPercent: 0.08,
       heightPercent: 0.05,
     ),
   };
+
 
   void _selectPart(String partName) {
     setState(() {

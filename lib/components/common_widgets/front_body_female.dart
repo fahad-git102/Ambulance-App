@@ -131,85 +131,96 @@ class _FrontBodyFemaleState extends State<FrontBodyFemale> {
       widthPercent: 0.25,
       heightPercent: 0.262,
     ),
-    FemaleFrontBodyParts.leftUpperArm: BodyPartPosition(
+
+    // ✅ Swapped arms
+    FemaleFrontBodyParts.rightUpperArm: BodyPartPosition(
       topPercent: 0.24,
       leftPercent: 0.29,
       widthPercent: 0.079,
       heightPercent: 0.138,
     ),
-    FemaleFrontBodyParts.leftForeArm: BodyPartPosition(
-      topPercent: 0.36,
-      leftPercent: 0.26,
-      widthPercent: 0.079,
-      heightPercent: 0.138,
-    ),
-    FemaleFrontBodyParts.leftHand: BodyPartPosition(
-      topPercent: 0.5,
-      leftPercent: 0.26,
-      widthPercent: 0.079,
-      heightPercent: 0.062,
-    ),
-    FemaleFrontBodyParts.rightUpperArm: BodyPartPosition(
-      topPercent: 0.24,
-      leftPercent: 0.61,
-      widthPercent: 0.079,
-      heightPercent: 0.138,
-    ),
     FemaleFrontBodyParts.rightForeArm: BodyPartPosition(
       topPercent: 0.36,
-      leftPercent: 0.63,
+      leftPercent: 0.26,
       widthPercent: 0.079,
       heightPercent: 0.138,
     ),
     FemaleFrontBodyParts.rightHand: BodyPartPosition(
       topPercent: 0.5,
+      leftPercent: 0.26,
+      widthPercent: 0.079,
+      heightPercent: 0.062,
+    ),
+
+    FemaleFrontBodyParts.leftUpperArm: BodyPartPosition(
+      topPercent: 0.24,
+      leftPercent: 0.61,
+      widthPercent: 0.079,
+      heightPercent: 0.138,
+    ),
+    FemaleFrontBodyParts.leftForeArm: BodyPartPosition(
+      topPercent: 0.36,
+      leftPercent: 0.63,
+      widthPercent: 0.079,
+      heightPercent: 0.138,
+    ),
+    FemaleFrontBodyParts.leftHand: BodyPartPosition(
+      topPercent: 0.5,
       leftPercent: 0.64,
       widthPercent: 0.079,
       heightPercent: 0.062,
     ),
-    FemaleFrontBodyParts.leftThigh: BodyPartPosition(
+
+    // ✅ Swapped thighs
+    FemaleFrontBodyParts.rightThigh: BodyPartPosition(
       topPercent: 0.538,
       leftPercent: 0.382,
       widthPercent: 0.079,
       heightPercent: 0.138,
     ),
-    FemaleFrontBodyParts.rightThigh: BodyPartPosition(
+    FemaleFrontBodyParts.leftThigh: BodyPartPosition(
       topPercent: 0.538,
       leftPercent: 0.513,
       widthPercent: 0.079,
       heightPercent: 0.138,
     ),
-    FemaleFrontBodyParts.leftKnee: BodyPartPosition(
+
+    // ✅ Swapped knees
+    FemaleFrontBodyParts.rightKnee: BodyPartPosition(
       topPercent: 0.68,
       leftPercent: 0.379,
       widthPercent: 0.079,
       heightPercent: 0.046,
     ),
-    FemaleFrontBodyParts.rightKnee: BodyPartPosition(
+    FemaleFrontBodyParts.leftKnee: BodyPartPosition(
       topPercent: 0.68,
       leftPercent: 0.52,
       widthPercent: 0.079,
       heightPercent: 0.046,
     ),
-    FemaleFrontBodyParts.leftShin: BodyPartPosition(
+
+    // ✅ Swapped shins
+    FemaleFrontBodyParts.rightShin: BodyPartPosition(
       topPercent: 0.73,
       leftPercent: 0.382,
       widthPercent: 0.079,
       heightPercent: 0.138,
     ),
-    FemaleFrontBodyParts.rightShin: BodyPartPosition(
+    FemaleFrontBodyParts.leftShin: BodyPartPosition(
       topPercent: 0.73,
       leftPercent: 0.511,
       widthPercent: 0.079,
       heightPercent: 0.138,
     ),
-    FemaleFrontBodyParts.leftFoot: BodyPartPosition(
+
+    // ✅ Swapped feet
+    FemaleFrontBodyParts.rightFoot: BodyPartPosition(
       topPercent: 0.89,
       leftPercent: 0.379,
       widthPercent: 0.079,
       heightPercent: 0.046,
     ),
-    FemaleFrontBodyParts.rightFoot: BodyPartPosition(
+    FemaleFrontBodyParts.leftFoot: BodyPartPosition(
       topPercent: 0.89,
       leftPercent: 0.511,
       widthPercent: 0.079,
